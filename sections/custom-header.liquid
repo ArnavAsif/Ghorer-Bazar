@@ -33,6 +33,8 @@
   assign more_faq_url = section.settings.more_faq_url | default: '/pages/faq'
   assign more_call_val = section.settings.more_phone_number | default: section.settings.phone_number | default: '+8809642922922'
   assign more_wa_val = section.settings.more_whatsapp_number | default: section.settings.whatsapp_number | default: '+8801321208940'
+  assign raw_header_search = search.terms | default: ''
+  assign clean_header_search = raw_header_search | remove: '*' | strip
 %}
 
 <style>
@@ -1926,11 +1928,13 @@
         </div>
 
         <form action="{{ routes.search_url }}" method="get" role="search" class="gh-search-form">
+          <input type="hidden" name="options[prefix]" value="last">
+          <input type="hidden" name="type" value="product">
           <div class="gh-search-input-wrap">
             <input 
               type="text" 
               name="q" 
-              value="{{ search.terms | escape }}" 
+              value="{{ clean_header_search | escape }}" 
               placeholder="{{ section.settings.search_placeholder | default: 'Search in...' }}" 
               class="gh-search-input" 
               autocomplete="off"
@@ -2195,11 +2199,13 @@
 
     <div class="gh-mobile-search-body">
       <form action="{{ routes.search_url }}" method="get" role="search" class="gh-search-form gh-modal-search-form">
+        <input type="hidden" name="options[prefix]" value="last">
+        <input type="hidden" name="type" value="product">
         <div class="gh-search-input-wrap">
           <input 
             type="text" 
             name="q" 
-            value="{{ search.terms | escape }}"
+            value="{{ clean_header_search | escape }}"
             placeholder="{{ section.settings.search_placeholder | default: 'Search in...' }}" 
             class="gh-search-input gh-modal-search-input" 
             autocomplete="off" 
@@ -2638,6 +2644,25 @@
           const input = form.querySelector('.gh-search-input');
           const dropdown = form.querySelector('.gh-live-search-dropdown');
           if (!input || !dropdown) return;
+
+          function cleanAsterisk() {
+            if (input.value && input.value.indexOf('*') !== -1) {
+              input.value = input.value.replace(/\*/g, '').trim();
+            }
+          }
+          cleanAsterisk();
+          window.addEventListener('pageshow', cleanAsterisk);
+
+          form.addEventListener('submit', function(e) {
+            const val = input.value.trim();
+            if (!val) {
+              e.preventDefault();
+              return;
+            }
+            if (val.length >= 2 && !val.endsWith('*')) {
+              input.value = val + '*';
+            }
+          });
 
           let debounceTimer = null;
           let activeAbortController = null;

@@ -39,8 +39,7 @@
         "bg_color": "#ffffff",
         "heading_color": "#1f2937",
         "text_color": "#4b5563",
-        "accent_color": "#f37321",
-        "container_max_width": 95
+        "accent_color": "#f37321"
       }
     },
     "footer": {

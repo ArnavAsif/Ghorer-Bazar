@@ -11,29 +11,13 @@
   "sections": {
     "main": {
       "type": "main-page",
-      "disabled": true,
       "settings": {
         "padding_top": 28,
         "padding_bottom": 28
       }
-    },
-    "brand_collection_section_jdjaM8": {
-      "type": "brand-collection-section",
-      "name": "Brand Products Section",
-      "settings": {
-        "collection": "frontpage",
-        "title": "Brand Products",
-        "brand_description": "",
-        "columns_desktop": 4,
-        "products_per_page": 20,
-        "section_bg": "#fafbfd",
-        "margin_top": 35,
-        "margin_bottom": 50
-      }
     }
   },
   "order": [
-    "main",
-    "brand_collection_section_jdjaM8"
+    "main"
   ]
 }

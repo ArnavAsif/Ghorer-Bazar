@@ -45,6 +45,8 @@
 
 {%- liquid
   assign sort_by = search.sort_by | default: search.default_sort_by
+  assign raw_terms = search.terms | default: ''
+  assign clean_terms = raw_terms | remove: '*' | strip
   assign terms = search.terms | escape
   assign search_url = '?q=' | append: terms | append: '&options%5Bprefix%5D=last&sort_by=' | append: sort_by
 -%}
@@ -85,7 +87,7 @@
                 id="Search-In-Template"
                 type="search"
                 name="q"
-                value="{{ search.terms | escape }}"
+                value="{{ clean_terms | escape }}"
                 placeholder="{{ 'general.search.search' | t }}"
                 {%- if settings.predictive_search_enabled -%}
                   role="combobox"
@@ -136,12 +138,12 @@
         {%- unless section.settings.enable_filtering or section.settings.enable_sorting -%}
           {%- if search.results_count > 0 -%}
             <p role="status">
-              {{ 'templates.search.results_with_count_and_term' | t: terms: search.terms, count: search.results_count }}
+              {{ 'templates.search.results_with_count_and_term' | t: terms: clean_terms, count: search.results_count }}
             </p>
           {%- endif -%}
         {%- endunless -%}
         {%- if search.results_count == 0 and search.filters == empty -%}
-          <p role="status">{{ 'templates.search.no_results' | t: terms: search.terms }}</p>
+          <p role="status">{{ 'templates.search.no_results' | t: terms: clean_terms }}</p>
         {%- endif -%}
       {%- endif -%}
     </div>
@@ -187,7 +189,7 @@
               <h2 class="product-count__text text-body">
                 <span id="ProductCountDesktop">
                   {%- if search.results_count -%}
-                    {{ 'templates.search.results_with_count' | t: terms: search.terms, count: search.results_count }}
+                    {{ 'templates.search.results_with_count' | t: terms: clean_terms, count: search.results_count }}
                   {%- elsif search.products_count == search.all_products_count -%}
                     {{ 'products.facets.product_count_simple' | t: count: search.products_count }}
                   {%- else -%}
@@ -333,6 +335,49 @@
 {% if section.settings.image_shape == 'arch' %}
   {{ 'mask-arch.svg' | inline_asset_content }}
 {%- endif -%}
+
+<script>
+  (function() {
+    function cleanSearchInputs() {
+      document.querySelectorAll('input[name="q"]').forEach(function(inp) {
+        if (inp && inp.value && inp.value.indexOf('*') !== -1) {
+          inp.value = inp.value.replace(/\*/g, '').trim();
+        }
+      });
+    }
+    cleanSearchInputs();
+    window.addEventListener('pageshow', cleanSearchInputs);
+
+    var searchForm = document.querySelector('main-search form');
+    if (searchForm) {
+      searchForm.addEventListener('submit', function() {
+        var inp = searchForm.querySelector('input[name="q"]');
+        if (inp) {
+          var val = inp.value.trim();
+          if (val.length >= 2 && !val.endsWith('*')) {
+            inp.value = val + '*';
+          }
+        }
+      });
+    }
+
+    {% if search.performed and search.results_count == 0 %}
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var q = params.get('q');
+        if (q) {
+          var trimmed = q.trim();
+          if (trimmed.length >= 2 && !trimmed.endsWith('*')) {
+            params.set('q', trimmed + '*');
+            if (!params.get('options[prefix]')) params.set('options[prefix]', 'last');
+            if (!params.get('type')) params.set('type', 'product');
+            window.location.replace(window.location.pathname + '?' + params.toString());
+          }
+        }
+      } catch(e) {}
+    {% endif %}
+  })();
+</script>
 
 {% schema %}
 {

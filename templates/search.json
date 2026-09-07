@@ -11,8 +11,10 @@
   "sections": {
     "main": {
       "type": "main-search",
+      "disabled": true,
       "settings": {
         "columns_desktop": 4,
+        "columns_mobile": "2",
         "image_ratio": "adapt",
         "image_shape": "default",
         "show_secondary_image": false,
@@ -23,13 +25,80 @@
         "enable_sorting": true,
         "article_show_date": true,
         "article_show_author": false,
-        "columns_mobile": "2",
         "padding_top": 36,
         "padding_bottom": 36
+      }
+    },
+    "custom_search_page_mGyxPk": {
+      "type": "custom-search-page",
+      "blocks": {
+        "brand_kzaHG4": {
+          "type": "brand",
+          "settings": {
+            "title": "GhorerBazar"
+          }
+        },
+        "brand_kB7D4h": {
+          "type": "brand",
+          "settings": {
+            "title": "Honeyraj"
+          }
+        },
+        "brand_YfpWDF": {
+          "type": "brand",
+          "settings": {
+            "title": "Khejuri"
+          }
+        },
+        "brand_LeyQNd": {
+          "type": "brand",
+          "settings": {
+            "title": "Shosti food"
+          }
+        },
+        "flag_fbL37K": {
+          "type": "flag",
+          "settings": {
+            "title": "Best Selling"
+          }
+        },
+        "flag_bnLP4j": {
+          "type": "flag",
+          "settings": {
+            "title": "New Arrival"
+          }
+        },
+        "flag_zCi9pz": {
+          "type": "flag",
+          "settings": {
+            "title": "Offered Items"
+          }
+        }
+      },
+      "block_order": [
+        "brand_kzaHG4",
+        "brand_kB7D4h",
+        "brand_YfpWDF",
+        "brand_LeyQNd",
+        "flag_fbL37K",
+        "flag_bnLP4j",
+        "flag_zCi9pz"
+      ],
+      "name": "Search Results Section",
+      "settings": {
+        "per_page": 16,
+        "section_width": "container",
+        "enable_price_filter": true,
+        "price_max_range": 4500,
+        "enable_brand_filter": true,
+        "selected_brands": "GhorerBazar, Honeyraj, Khejuri, Shosti food",
+        "enable_flag_filter": true,
+        "selected_flags": "Best Selling, New Arrival, Offered Items"
       }
     }
   },
   "order": [
-    "main"
+    "main",
+    "custom_search_page_mGyxPk"
   ]
 }
