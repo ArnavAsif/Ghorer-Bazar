@@ -359,6 +359,19 @@ quick-add-modal .product-form__buttons {
   padding: 0.8rem;
   min-width: 100%;
   box-sizing: border-box;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.quick-add__submit:hover,
+.card-wrapper:hover .quick-add__submit {
+  background-color: #f37321 !important;
+  color: #ffffff !important;
+  border-color: #f37321 !important;
+}
+
+.quick-add__submit:hover *,
+.card-wrapper:hover .quick-add__submit * {
+  color: #ffffff !important;
 }
 
 quick-add-modal .product-media-container.constrain-height {

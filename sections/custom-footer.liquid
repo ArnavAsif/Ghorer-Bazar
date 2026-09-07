@@ -628,7 +628,7 @@
         <div class="gh-footer-payment-wrap">
           <span class="gh-footer-pay-label">{{ section.settings.pay_label }}</span>
           {% if section.settings.payment_banner.src %}
-            <img src="{{ section.settings.payment_banner | image_url: width: 2000 }}" alt="Payment Methods" class="gh-footer-payment-img" loading="lazy">
+            <img src="{{ section.settings.payment_banner | image_url: width: 800 }}" alt="Payment Methods" class="gh-footer-payment-img" loading="lazy">
           {% else %}
             <img src="{{ payment_banner }}" alt="Payment Gateways" class="gh-footer-payment-img" loading="lazy">
           {% endif %}

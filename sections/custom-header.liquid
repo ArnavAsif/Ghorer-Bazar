@@ -273,7 +273,7 @@
     background-color: var(--gh-nav-bg);
     width: 100%;
     position: relative;
-    z-index: 50;
+    z-index: 5;
     transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
   }
 
@@ -744,6 +744,11 @@
   .gh-cart-qty-btn:hover {
     background: #f1f5f9;
   }
+  .gh-cart-qty-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
   .gh-cart-qty-val {
     font-size: 12px;
     font-weight: 600;
@@ -1013,6 +1018,43 @@
   @media (max-width: 767px) {
     .gh-middle-bar, .gh-nav-bar-wrapper { display: none !important; }
     .gh-header-mobile, .gh-mobile-search-bar { display: block !important; }
+  }
+
+  /* Locked State & Localized Mini Spinner for Product Cards Quantity Selector */
+  .gh-pcard-qty-box.is-locked,
+  .gh-qty-box-wrap.is-locked {
+    position: relative;
+    pointer-events: none;
+  }
+  .gh-pcard-qty-box.is-locked .gh-pcard-qty-btn,
+  .gh-qty-box-wrap.is-locked .gh-qty-btn {
+    opacity: 0.35;
+    cursor: not-allowed !important;
+    pointer-events: none;
+  }
+  .gh-pcard-qty-box.is-locked .gh-pcard-qty-val,
+  .gh-qty-box-wrap.is-locked .gh-qty-val {
+    opacity: 0.45;
+    transition: opacity 0.15s ease;
+  }
+  .gh-pcard-qty-box.is-locked::after,
+  .gh-qty-box-wrap.is-locked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 13px;
+    height: 13px;
+    margin: -6.5px 0 0 -6.5px;
+    border: 2px solid rgba(243, 115, 33, 0.25);
+    border-top-color: #f37321;
+    border-radius: 50%;
+    animation: ghMiniSpin 0.6s linear infinite;
+    pointer-events: none;
+    z-index: 2;
+  }
+  @keyframes ghMiniSpin {
+    to { transform: rotate(360deg); }
   }
 </style>
 
@@ -1684,7 +1726,7 @@
                     <div class="gh-cart-qty-box">
                       <button type="button" class="gh-cart-qty-btn js-qty-dec" data-key="${item.key}" aria-label="Decrease quantity">-</button>
                       <span class="gh-cart-qty-val">${item.quantity}</span>
-                      <button type="button" class="gh-cart-qty-btn js-qty-inc" data-key="${item.key}" aria-label="Increase quantity">+</button>
+                      <button type="button" class="gh-cart-qty-btn js-qty-inc" data-key="${item.key}" aria-label="Increase quantity"${item.quantity >= 20 ? ' disabled' : ''}>+</button>
                     </div>
                     <span class="gh-cart-price-math">&times; ${unitPrice} = ${linePrice}</span>
                   </div>
@@ -1697,12 +1739,341 @@
         }
       }
 
+      const MAX_QTY = 20;
+      const DEBOUNCE_MS = 180;
+
+      // State tracking maps by variantId
+      const targetQuantities = {};
+      const isInitialAddMap = {};
+      const debounceTimers = {};
+      const isLockedMap = {};
+
+      function lockCardsUI(vid) {
+        isLockedMap[vid] = true;
+        document.querySelectorAll(`[data-variant-id="${vid}"]`).forEach(card => {
+          const qtyBox = card.matches('.js-pcard-qty-box, .js-gh-qty-box') ? card : card.querySelector('.js-pcard-qty-box, .js-gh-qty-box');
+          if (qtyBox) qtyBox.classList.add('is-locked');
+          const plusBtn = card.matches('.js-pcard-qty-plus, .js-gh-qty-plus') ? card : card.querySelector('.js-pcard-qty-plus, .js-gh-qty-plus');
+          const minusBtn = card.matches('.js-pcard-qty-minus, .js-gh-qty-minus') ? card : card.querySelector('.js-pcard-qty-minus, .js-gh-qty-minus');
+          if (plusBtn) {
+            plusBtn.disabled = true;
+            plusBtn.classList.add('is-disabled');
+            plusBtn.setAttribute('aria-disabled', 'true');
+          }
+          if (minusBtn) {
+            minusBtn.disabled = true;
+            minusBtn.classList.add('is-disabled');
+            minusBtn.setAttribute('aria-disabled', 'true');
+          }
+        });
+      }
+
+      function unlockCardsUI(vid, confirmedQty) {
+        delete isLockedMap[vid];
+        document.querySelectorAll(`[data-variant-id="${vid}"]`).forEach(card => {
+          const qtyBox = card.matches('.js-pcard-qty-box, .js-gh-qty-box') ? card : card.querySelector('.js-pcard-qty-box, .js-gh-qty-box');
+          const plusBtn = card.matches('.js-pcard-qty-plus, .js-gh-qty-plus') ? card : card.querySelector('.js-pcard-qty-plus, .js-gh-qty-plus');
+          const minusBtn = card.matches('.js-pcard-qty-minus, .js-gh-qty-minus') ? card : card.querySelector('.js-pcard-qty-minus, .js-gh-qty-minus');
+
+          if (qtyBox) qtyBox.classList.remove('is-locked');
+
+          if (minusBtn) {
+            minusBtn.disabled = false;
+            minusBtn.classList.remove('is-disabled');
+            minusBtn.removeAttribute('aria-disabled');
+          }
+
+          if (plusBtn) {
+            const checkValEl = card.matches('.js-pcard-qty-val, .js-gh-qty-val') ? card : card.querySelector('.js-pcard-qty-val, .js-gh-qty-val');
+            const checkQty = confirmedQty !== undefined ? confirmedQty : (parseInt(checkValEl?.textContent || '0', 10));
+            if (checkQty >= MAX_QTY) {
+              plusBtn.disabled = true;
+              plusBtn.classList.add('is-disabled');
+              plusBtn.setAttribute('aria-disabled', 'true');
+            } else {
+              plusBtn.disabled = false;
+              plusBtn.classList.remove('is-disabled');
+              plusBtn.removeAttribute('aria-disabled');
+            }
+          }
+        });
+      }
+
+      function updateCardsUIOptimistic(vid, qty) {
+        document.querySelectorAll(`[data-variant-id="${vid}"]`).forEach(card => {
+          const addBtn = card.matches('.js-pcard-add-btn, .js-gh-add-cart') ? card : card.querySelector('.js-pcard-add-btn, .js-gh-add-cart');
+          const qtyBox = card.matches('.js-pcard-qty-box, .js-gh-qty-box') ? card : card.querySelector('.js-pcard-qty-box, .js-gh-qty-box');
+          const qtyVal = card.matches('.js-pcard-qty-val, .js-gh-qty-val') ? card : card.querySelector('.js-pcard-qty-val, .js-gh-qty-val');
+          const plusBtn = card.matches('.js-pcard-qty-plus, .js-gh-qty-plus') ? card : card.querySelector('.js-pcard-qty-plus, .js-gh-qty-plus');
+
+          if (qty > 0) {
+            if (addBtn) addBtn.style.display = 'none';
+            if (qtyBox) qtyBox.classList.add('is-active');
+            if (qtyVal) qtyVal.textContent = qty;
+          } else {
+            if (addBtn) addBtn.style.display = '';
+            if (qtyBox) qtyBox.classList.remove('is-active');
+            if (qtyVal) qtyVal.textContent = '1';
+          }
+
+          if (plusBtn) {
+            if (qty >= MAX_QTY) {
+              plusBtn.disabled = true;
+              plusBtn.classList.add('is-disabled');
+              plusBtn.setAttribute('aria-disabled', 'true');
+            } else {
+              plusBtn.disabled = false;
+              plusBtn.classList.remove('is-disabled');
+              plusBtn.removeAttribute('aria-disabled');
+            }
+          }
+        });
+      }
+
+      /* Global Product Cards Synchronizer (syncs .js-gh-product-card and .gh-top-card across the page) */
+      window.syncAllProductCards = function(cart) {
+        if (!cart || !Array.isArray(cart.items)) {
+          return fetch('/cart.js')
+            .then(res => res.json())
+            .then(c => {
+              if (c) window.syncAllProductCards(c);
+              return c;
+            })
+            .catch(() => {});
+        }
+
+        const itemsMap = {};
+        let totalCount = 0;
+        cart.items.forEach(item => {
+          const vid = String(item.variant_id || item.id || '');
+          if (vid) {
+            itemsMap[vid] = (itemsMap[vid] || 0) + Number(item.quantity || 0);
+          }
+          totalCount += Number(item.quantity || 0);
+        });
+
+        const badgeCount = cart.item_count !== undefined ? cart.item_count : totalCount;
+        document.querySelectorAll('.js-cart-badge-count').forEach(badge => {
+          badge.textContent = badgeCount;
+        });
+
+        // 1. Snippet product cards (.js-gh-product-card)
+        document.querySelectorAll('.js-gh-product-card').forEach(card => {
+          const variantId = String(card.dataset.variantId || '');
+          // Do not overwrite cards that are currently locked or debouncing
+          if (variantId && (isLockedMap[variantId] || targetQuantities[variantId] !== undefined)) {
+            return;
+          }
+
+          const addBtn = card.querySelector('.js-pcard-add-btn');
+          const qtyBox = card.querySelector('.js-pcard-qty-box');
+          const qtyVal = card.querySelector('.js-pcard-qty-val');
+          const plusBtn = card.querySelector('.js-pcard-qty-plus');
+          const currentQty = itemsMap[variantId] || 0;
+
+          if (currentQty > 0) {
+            if (addBtn) addBtn.style.display = 'none';
+            if (qtyBox) qtyBox.classList.add('is-active');
+            if (qtyVal) qtyVal.textContent = currentQty;
+          } else {
+            if (addBtn) addBtn.style.display = '';
+            if (qtyBox) qtyBox.classList.remove('is-active');
+            if (qtyVal) qtyVal.textContent = '1';
+          }
+
+          if (plusBtn) {
+            if (currentQty >= MAX_QTY) {
+              plusBtn.disabled = true;
+              plusBtn.classList.add('is-disabled');
+              plusBtn.setAttribute('aria-disabled', 'true');
+            } else {
+              plusBtn.disabled = false;
+              plusBtn.classList.remove('is-disabled');
+              plusBtn.removeAttribute('aria-disabled');
+            }
+          }
+        });
+
+        // 2. Top-selling cards (.gh-top-card)
+        document.querySelectorAll('.gh-top-card').forEach(card => {
+          const variantId = String(card.dataset.variantId || '');
+          // Do not overwrite cards that are currently locked or debouncing
+          if (variantId && (isLockedMap[variantId] || targetQuantities[variantId] !== undefined)) {
+            return;
+          }
+
+          const addBtn = card.querySelector('.js-gh-add-cart');
+          const qtyBox = card.querySelector('.js-gh-qty-box');
+          const qtyVal = card.querySelector('.js-gh-qty-val');
+          const plusBtn = card.querySelector('.js-gh-qty-plus');
+          const currentQty = itemsMap[variantId] || 0;
+
+          if (currentQty > 0) {
+            if (addBtn) addBtn.style.display = 'none';
+            if (qtyBox) qtyBox.classList.add('is-active');
+            if (qtyVal) qtyVal.textContent = currentQty;
+          } else {
+            if (addBtn) addBtn.style.display = '';
+            if (qtyBox) qtyBox.classList.remove('is-active');
+            if (qtyVal) qtyVal.textContent = '1';
+          }
+
+          if (plusBtn) {
+            if (currentQty >= MAX_QTY) {
+              plusBtn.disabled = true;
+              plusBtn.classList.add('is-disabled');
+              plusBtn.setAttribute('aria-disabled', 'true');
+            } else {
+              plusBtn.disabled = false;
+              plusBtn.classList.remove('is-disabled');
+              plusBtn.removeAttribute('aria-disabled');
+            }
+          }
+        });
+
+        return Promise.resolve(cart);
+      };
+      window.syncGhProductCardsWithCart = window.syncAllProductCards;
+
+      /* Optimized Asynchronous Variant Quantity Queue (Instant UI, Debounced API, Max 20, Locked during requests, No Race Conditions) */
+      window.ghUpdateVariantQuantity = function(variantId, nextQty, isInitialAdd = false) {
+        const vid = String(variantId || '');
+        if (!vid) return;
+
+        // Block clicks while this variant is actively locked / in-flight
+        if (isLockedMap[vid]) return;
+
+        const cappedQty = Math.min(MAX_QTY, Math.max(0, nextQty));
+        targetQuantities[vid] = cappedQty;
+        if (isInitialAdd && isInitialAddMap[vid] === undefined) {
+          isInitialAddMap[vid] = true;
+        }
+
+        // 1. 0ms Instant Optimistic UI Update across all cards on page
+        updateCardsUIOptimistic(vid, cappedQty);
+
+        // 2. Demo fallback handling
+        if (vid.startsWith('demo')) {
+          lockCardsUI(vid);
+          setTimeout(() => {
+            unlockCardsUI(vid, cappedQty);
+            delete targetQuantities[vid];
+            delete isInitialAddMap[vid];
+            document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId: vid, quantity: cappedQty } }));
+            if (window.refreshGhorerCart) window.refreshGhorerCart(false);
+          }, 150);
+          return;
+        }
+
+        // 3. Consolidate rapid clicks within DEBOUNCE_MS (180ms)
+        if (debounceTimers[vid]) {
+          clearTimeout(debounceTimers[vid]);
+        }
+
+        debounceTimers[vid] = setTimeout(() => {
+          delete debounceTimers[vid];
+          executeLockedCartSync(vid);
+        }, DEBOUNCE_MS);
+      };
+
+      function executeLockedCartSync(vid) {
+        const finalTarget = targetQuantities[vid];
+        if (finalTarget === undefined) return;
+        const wasInitialAdd = Boolean(isInitialAddMap[vid]);
+
+        // If user added then immediately decremented back to 0 before debounce fired, cancel without API call
+        if (wasInitialAdd && finalTarget === 0) {
+          delete targetQuantities[vid];
+          delete isInitialAddMap[vid];
+          updateCardsUIOptimistic(vid, 0);
+          return;
+        }
+
+        // Lock controls to prevent clicking +/- back and forth while request is in flight
+        lockCardsUI(vid);
+
+        const useAdd = wasInitialAdd && finalTarget > 0;
+        const endpoint = useAdd ? '/cart/add.js' : '/cart/change.js';
+        const payload = { id: vid, quantity: finalTarget };
+
+        // Safety fallback timer (8s) to ensure UI never gets permanently locked on network loss
+        const safetyTimer = setTimeout(() => {
+          unlockCardsUI(vid);
+          delete targetQuantities[vid];
+          delete isInitialAddMap[vid];
+        }, 8000);
+
+        fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        .then(res => {
+          if (!res.ok) {
+            const fallbackEndpoint = useAdd ? '/cart/change.js' : '/cart/add.js';
+            return fetch(fallbackEndpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify(payload)
+            }).then(r => r.json());
+          }
+          return res.json();
+        })
+        .then(() => {
+          clearTimeout(safetyTimer);
+          delete targetQuantities[vid];
+          delete isInitialAddMap[vid];
+
+          // Fetch authoritative cart to guarantee exact synchronization
+          return fetch('/cart.js')
+            .then(r => r.json())
+            .then(cart => {
+              let confirmedQty = 0;
+              if (cart && Array.isArray(cart.items)) {
+                cart.items.forEach(item => {
+                  const itemVid = String(item.variant_id || item.id || '');
+                  if (itemVid === vid) {
+                    confirmedQty += Number(item.quantity || 0);
+                  }
+                });
+              }
+
+              // Unlock controls and set verified quantity
+              unlockCardsUI(vid, confirmedQty);
+              updateCardsUIOptimistic(vid, confirmedQty);
+
+              if (window.syncAllProductCards) {
+                window.syncAllProductCards(cart);
+              }
+              if (window.refreshGhorerCart) {
+                window.refreshGhorerCart(false);
+              }
+              document.dispatchEvent(new CustomEvent('cart:updated', {
+                detail: { variantId: vid, quantity: confirmedQty, cart: cart }
+              }));
+            });
+        })
+        .catch(err => {
+          clearTimeout(safetyTimer);
+          console.error('Cart sync error:', err);
+          delete targetQuantities[vid];
+          delete isInitialAddMap[vid];
+          unlockCardsUI(vid);
+          if (window.syncAllProductCards) {
+            window.syncAllProductCards();
+          }
+        });
+      }
+
       /* Global Live Cart Refresh */
       window.refreshGhorerCart = function(openDrawer = false) {
         return fetch('/cart.js')
           .then(res => res.json())
           .then(cart => {
             updateCartUI(cart);
+            if (window.syncAllProductCards) {
+              window.syncAllProductCards(cart);
+            }
             if (openDrawer) {
               openCartDrawer();
             }
@@ -1718,12 +2089,15 @@
         fetch('/cart/change.js', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ id: key, quantity: quantity })
+          body: JSON.stringify({ id: key, quantity: Math.min(MAX_QTY, quantity) })
         })
         .then(res => res.json())
         .then(cart => {
           updateCartUI(cart);
-          document.dispatchEvent(new CustomEvent('cart:updated', { detail: { key, quantity } }));
+          if (window.syncAllProductCards) {
+            window.syncAllProductCards(cart);
+          }
+          document.dispatchEvent(new CustomEvent('cart:updated', { detail: { key, quantity, cart } }));
         })
         .catch(err => console.error('Error updating cart item:', err));
       }
@@ -1747,7 +2121,8 @@
           const card = incBtn.closest('.gh-cart-item-card');
           const qtyVal = card ? card.querySelector('.gh-cart-qty-val') : null;
           const currentQty = qtyVal ? (parseInt(qtyVal.textContent, 10) || 1) : 1;
-          changeCartItem(key, currentQty + 1);
+          if (currentQty >= MAX_QTY) return;
+          changeCartItem(key, Math.min(MAX_QTY, currentQty + 1));
         } else if (removeBtn) {
           e.preventDefault();
           const key = removeBtn.dataset.key;
@@ -1784,10 +2159,13 @@
             recAddBtn.innerHTML = origText;
             recAddBtn.disabled = false;
           }, 1200);
-          return window.refreshGhorerCart(true);
+          return window.refreshGhorerCart(false); // DO NOT OPEN DRAWER / SILENT
         })
-        .then(() => {
-          document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: 1 } }));
+        .then(cart => {
+          if (window.syncAllProductCards && cart) {
+            window.syncAllProductCards(cart);
+          }
+          document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: 1, cart } }));
         })
         .catch(err => {
           console.error('Error adding recommended product to cart:', err);
@@ -1797,8 +2175,13 @@
       });
 
       /* Listen to global cart:updated events */
-      document.addEventListener('cart:updated', function() {
-        if (window.refreshGhorerCart) {
+      document.addEventListener('cart:updated', function(e) {
+        if (e && e.detail && e.detail.cart) {
+          updateCartUI(e.detail.cart);
+          if (window.syncAllProductCards) {
+            window.syncAllProductCards(e.detail.cart);
+          }
+        } else if (window.refreshGhorerCart) {
           window.refreshGhorerCart(false);
         }
       });
@@ -1813,13 +2196,22 @@
           if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change') || url.includes('/cart/clear'))) {
             promise.then(res => {
               if (res.ok && window.refreshGhorerCart) {
-                setTimeout(() => { window.refreshGhorerCart(false); }, 150);
+                setTimeout(() => {
+                  window.refreshGhorerCart(false).then(cart => {
+                    if (window.syncAllProductCards && cart) {
+                      window.syncAllProductCards(cart);
+                    }
+                  });
+                }, 150);
               }
             }).catch(() => {});
           }
           return promise;
         };
       }
+
+      /* Initial cart & cards load */
+      window.refreshGhorerCart(false);
 
     }
 

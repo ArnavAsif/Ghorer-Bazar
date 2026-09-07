@@ -1538,7 +1538,7 @@
       });
       qtyPlus.addEventListener('click', () => {
         let val = parseInt(qtyInput.value, 10) || 1;
-        if (val < 99) qtyInput.value = val + 1;
+        if (val < 20) qtyInput.value = val + 1;
       });
     }
 
@@ -1549,11 +1549,12 @@
     const buyNowBtn = root.querySelector('.js-btn-buy-now');
 
     function addToCart(variantId, qty, isBuyNow) {
+      const safeQty = Math.min(20, Math.max(1, qty));
       if (isBuyNow) {
         fetch('/cart/add.js', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: variantId, quantity: qty })
+          body: JSON.stringify({ id: variantId, quantity: safeQty })
         })
         .then(() => {
           window.location.href = '/checkout';
@@ -1570,8 +1571,8 @@
 
         fetch('/cart/add.js', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: variantId, quantity: qty })
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ id: variantId, quantity: safeQty })
         })
         .then(res => res.json())
         .then(data => {
@@ -1579,10 +1580,10 @@
             addCartBtn.innerHTML = origText;
             addCartBtn.disabled = false;
           }
-          document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: qty } }));
           if (window.refreshGhorerCart) {
-            window.refreshGhorerCart(true);
+            window.refreshGhorerCart(false);
           }
+          document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: safeQty } }));
         })
         .catch(err => {
           if (addCartBtn) {
@@ -1596,7 +1597,7 @@
     if (addCartBtn) {
       addCartBtn.addEventListener('click', function() {
         const variantId = this.dataset.variantId;
-        const qty = parseInt(qtyInput.value, 10) || 1;
+        const qty = Math.min(20, Math.max(1, parseInt(qtyInput.value, 10) || 1));
         addToCart(variantId, qty, false);
       });
     }

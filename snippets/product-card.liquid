@@ -123,9 +123,10 @@
     width: 100%;
     box-sizing: border-box;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
-    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
     user-select: none;
     -webkit-user-select: none;
+    transform: none !important;
   }
 
   .gh-product-card * {
@@ -135,7 +136,7 @@
   .gh-product-card:hover {
     border-color: #e2e8f0;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-    transform: translateY(-2px);
+    transform: none !important;
   }
 
   /* Badge */
@@ -255,24 +256,34 @@
     justify-content: center;
     gap: 6px;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s, transform 0.15s;
+    transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease, transform 0.15s ease;
     outline: none;
     white-space: nowrap;
     padding: 0 10px;
   }
 
-  .gh-pcard-btn-add:hover {
-    background: #fff8f3;
+  .gh-pcard-btn-add svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    transition: stroke 0.25s ease;
+  }
+
+  .gh-pcard-btn-add:hover,
+  .gh-product-card:hover .gh-pcard-btn-add {
+    background: #f37321;
+    color: #ffffff;
+    border-color: #f37321;
+  }
+
+  .gh-pcard-btn-add:hover svg,
+  .gh-product-card:hover .gh-pcard-btn-add svg {
+    stroke: #ffffff;
   }
 
   .gh-pcard-btn-add:active {
     transform: scale(0.97);
-  }
-
-  .gh-pcard-btn-add svg {
-    width: 15px;
-    height: 15px;
-    stroke-width: 2.2;
   }
 
   /* Quantity Box */
@@ -314,6 +325,52 @@
 
   .gh-pcard-qty-btn:active {
     background: #c9540b;
+  }
+
+  .gh-pcard-qty-btn:disabled,
+  .gh-pcard-qty-btn.is-disabled {
+    opacity: 0.4;
+    cursor: not-allowed !important;
+    pointer-events: none;
+    background: #f37321;
+  }
+
+  .gh-pcard-qty-box.is-syncing .gh-pcard-qty-val {
+    opacity: 0.65;
+    transition: opacity 0.15s ease;
+  }
+
+  /* Locked State & Localized Mini Spinner (Zero layout shift, no full screen blocking) */
+  .gh-pcard-qty-box.is-locked {
+    position: relative;
+    pointer-events: none;
+  }
+  .gh-pcard-qty-box.is-locked .gh-pcard-qty-btn {
+    opacity: 0.35;
+    cursor: not-allowed !important;
+    pointer-events: none;
+  }
+  .gh-pcard-qty-box.is-locked .gh-pcard-qty-val {
+    opacity: 0.45;
+    transition: opacity 0.15s ease;
+  }
+  .gh-pcard-qty-box.is-locked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 13px;
+    height: 13px;
+    margin: -6.5px 0 0 -6.5px;
+    border: 2px solid rgba(243, 115, 33, 0.25);
+    border-top-color: #f37321;
+    border-radius: 50%;
+    animation: ghMiniSpin 0.6s linear infinite;
+    pointer-events: none;
+    z-index: 2;
+  }
+  @keyframes ghMiniSpin {
+    to { transform: rotate(360deg); }
   }
 
   .gh-pcard-qty-val {
@@ -370,15 +427,6 @@
   if (!window._ghProductCardScriptLoaded) {
     window._ghProductCardScriptLoaded = true;
 
-    // Helper: Show global loader modal if exists
-    function triggerCardLoader() {
-      const modal = document.getElementById('ghCartModalOverlay');
-      if (modal) {
-        modal.classList.add('is-visible');
-        setTimeout(() => modal.classList.remove('is-visible'), 400);
-      }
-    }
-
     // Helper: Update Header badges
     function updateCardHeaderBadge(count) {
       document.querySelectorAll('.js-cart-badge-count').forEach(b => {
@@ -386,47 +434,110 @@
       });
     }
 
-    // Initialize Card States with current cart
-    window.syncGhProductCardsWithCart = function() {
-      fetch('/cart.js')
-        .then(res => res.json())
-        .then(cart => {
-          if (cart && cart.item_count !== undefined) {
-            updateCardHeaderBadge(cart.item_count);
+    // Global Product Cards Synchronizer (fallback definition if header not yet loaded)
+    if (!window.syncAllProductCards) {
+      window.syncAllProductCards = function(cart) {
+        if (!cart || !Array.isArray(cart.items)) {
+          return fetch('/cart.js')
+            .then(res => res.json())
+            .then(c => {
+              if (c) window.syncAllProductCards(c);
+              return c;
+            })
+            .catch(() => {});
+        }
+
+        const itemsMap = {};
+        let totalCount = 0;
+        cart.items.forEach(item => {
+          const vid = String(item.variant_id || item.id || '');
+          if (vid) {
+            itemsMap[vid] = (itemsMap[vid] || 0) + Number(item.quantity || 0);
           }
-          const itemsMap = {};
-          if (cart && cart.items) {
-            cart.items.forEach(item => {
-              itemsMap[item.variant_id] = item.quantity;
-            });
+          totalCount += Number(item.quantity || 0);
+        });
+
+        const badgeCount = cart.item_count !== undefined ? cart.item_count : totalCount;
+        updateCardHeaderBadge(badgeCount);
+
+        // 1. Snippet product cards (.js-gh-product-card)
+        document.querySelectorAll('.js-gh-product-card').forEach(card => {
+          const variantId = String(card.dataset.variantId || '');
+          if (card.querySelector('.js-pcard-qty-box.is-locked')) return;
+
+          const addBtn = card.querySelector('.js-pcard-add-btn');
+          const qtyBox = card.querySelector('.js-pcard-qty-box');
+          const qtyVal = card.querySelector('.js-pcard-qty-val');
+          const plusBtn = card.querySelector('.js-pcard-qty-plus');
+          const currentQty = itemsMap[variantId] || 0;
+
+          if (currentQty > 0) {
+            if (addBtn) addBtn.style.display = 'none';
+            if (qtyBox) qtyBox.classList.add('is-active');
+            if (qtyVal) qtyVal.textContent = currentQty;
+          } else {
+            if (addBtn) addBtn.style.display = '';
+            if (qtyBox) qtyBox.classList.remove('is-active');
+            if (qtyVal) qtyVal.textContent = '1';
           }
 
-          document.querySelectorAll('.js-gh-product-card').forEach(card => {
-            const variantId = card.dataset.variantId;
-            const addBtn = card.querySelector('.js-pcard-add-btn');
-            const qtyBox = card.querySelector('.js-pcard-qty-box');
-            const qtyVal = card.querySelector('.js-pcard-qty-val');
-
-            const currentQty = itemsMap[variantId] || 0;
-            if (currentQty > 0) {
-              if (addBtn) addBtn.style.display = 'none';
-              if (qtyBox) qtyBox.classList.add('is-active');
-              if (qtyVal) qtyVal.textContent = currentQty;
+          if (plusBtn) {
+            if (currentQty >= 20) {
+              plusBtn.disabled = true;
+              plusBtn.classList.add('is-disabled');
+              plusBtn.setAttribute('aria-disabled', 'true');
             } else {
-              if (addBtn) addBtn.style.display = 'inline-flex';
-              if (qtyBox) qtyBox.classList.remove('is-active');
-              if (qtyVal) qtyVal.textContent = '1';
+              plusBtn.disabled = false;
+              plusBtn.classList.remove('is-disabled');
+              plusBtn.removeAttribute('aria-disabled');
             }
-          });
-        })
-        .catch(() => {});
-    };
+          }
+        });
 
-    // Attach Event Handlers (Idempotent)
+        // 2. Top-selling cards (.gh-top-card)
+        document.querySelectorAll('.gh-top-card').forEach(card => {
+          const variantId = String(card.dataset.variantId || '');
+          if (card.querySelector('.js-gh-qty-box.is-locked')) return;
+
+          const addBtn = card.querySelector('.js-gh-add-cart');
+          const qtyBox = card.querySelector('.js-gh-qty-box');
+          const qtyVal = card.querySelector('.js-gh-qty-val');
+          const plusBtn = card.querySelector('.js-gh-qty-plus');
+          const currentQty = itemsMap[variantId] || 0;
+
+          if (currentQty > 0) {
+            if (addBtn) addBtn.style.display = 'none';
+            if (qtyBox) qtyBox.classList.add('is-active');
+            if (qtyVal) qtyVal.textContent = currentQty;
+          } else {
+            if (addBtn) addBtn.style.display = '';
+            if (qtyBox) qtyBox.classList.remove('is-active');
+            if (qtyVal) qtyVal.textContent = '1';
+          }
+
+          if (plusBtn) {
+            if (currentQty >= 20) {
+              plusBtn.disabled = true;
+              plusBtn.classList.add('is-disabled');
+              plusBtn.setAttribute('aria-disabled', 'true');
+            } else {
+              plusBtn.disabled = false;
+              plusBtn.classList.remove('is-disabled');
+              plusBtn.removeAttribute('aria-disabled');
+            }
+          }
+        });
+
+        return Promise.resolve(cart);
+      };
+      window.syncGhProductCardsWithCart = window.syncAllProductCards;
+    }
+
+    // Attach Event Handlers (Idempotent per card)
     window.initGhProductCards = function() {
       document.querySelectorAll('.js-gh-product-card:not([data-initialized])').forEach(card => {
         card.setAttribute('data-initialized', 'true');
-        const variantId = card.dataset.variantId;
+        const variantId = String(card.dataset.variantId || '');
         const addBtn = card.querySelector('.js-pcard-add-btn');
         const qtyBox = card.querySelector('.js-pcard-qty-box');
         const qtyVal = card.querySelector('.js-pcard-qty-val');
@@ -437,31 +548,19 @@
         if (addBtn) {
           addBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            triggerCardLoader();
+            if (!variantId) return;
+            const qBox = card.querySelector('.js-pcard-qty-box');
+            if (qBox && qBox.classList.contains('is-locked')) return;
 
-            if (variantId && !variantId.startsWith('demo')) {
-              fetch('/cart/add.js', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: variantId, quantity: 1 })
-              })
-                .then(res => res.json())
-                .then(data => {
-                  addBtn.style.display = 'none';
-                  if (qtyBox) qtyBox.classList.add('is-active');
-                  if (qtyVal) qtyVal.textContent = '1';
-                  document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: 1 } }));
-                  fetch('/cart.js').then(r => r.json()).then(c => updateCardHeaderBadge(c.item_count));
-                  if (window.refreshGhorerCart) window.refreshGhorerCart(true);
-                })
-                .catch(() => {});
-            } else {
-              // Demo fallback
-              addBtn.style.display = 'none';
-              if (qtyBox) qtyBox.classList.add('is-active');
-              if (qtyVal) qtyVal.textContent = '1';
-              document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: 1 } }));
-              if (window.refreshGhorerCart) window.refreshGhorerCart(true);
+            let curQty = 0;
+            const qV = card.querySelector('.js-pcard-qty-val');
+            if (qBox && qBox.classList.contains('is-active') && qV) {
+              curQty = parseInt(qV.textContent, 10) || 0;
+            }
+
+            const nextQty = Math.min(20, curQty + 1);
+            if (window.ghUpdateVariantQuantity) {
+              window.ghUpdateVariantQuantity(variantId, nextQty, curQty === 0);
             }
           });
         }
@@ -470,28 +569,15 @@
         if (plusBtn) {
           plusBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            let cur = parseInt(qtyVal.textContent, 10) || 1;
-            const newQty = cur + 1;
-            triggerCardLoader();
+            if (!variantId) return;
+            if (qtyBox && qtyBox.classList.contains('is-locked')) return;
 
-            if (variantId && !variantId.startsWith('demo')) {
-              fetch('/cart/change.js', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: variantId, quantity: newQty })
-              })
-                .then(res => res.json())
-                .then(cart => {
-                  qtyVal.textContent = newQty;
-                  updateCardHeaderBadge(cart.item_count);
-                  document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: newQty } }));
-                  if (window.refreshGhorerCart) window.refreshGhorerCart(false);
-                })
-                .catch(() => {});
-            } else {
-              qtyVal.textContent = newQty;
-              document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: newQty } }));
-              if (window.refreshGhorerCart) window.refreshGhorerCart(false);
+            let cur = parseInt(qtyVal ? qtyVal.textContent : '1', 10) || 1;
+            if (cur >= 20) return; // Disallow exceeding 20
+
+            const nextQty = Math.min(20, cur + 1);
+            if (window.ghUpdateVariantQuantity) {
+              window.ghUpdateVariantQuantity(variantId, nextQty, false);
             }
           });
         }
@@ -500,54 +586,38 @@
         if (minusBtn) {
           minusBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            let cur = parseInt(qtyVal.textContent, 10) || 1;
-            const newQty = cur - 1;
-            triggerCardLoader();
+            if (!variantId) return;
+            if (qtyBox && qtyBox.classList.contains('is-locked')) return;
 
-            if (variantId && !variantId.startsWith('demo')) {
-              fetch('/cart/change.js', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: variantId, quantity: newQty })
-              })
-                .then(res => res.json())
-                .then(cart => {
-                  if (newQty <= 0) {
-                    if (qtyBox) qtyBox.classList.remove('is-active');
-                    if (addBtn) addBtn.style.display = 'inline-flex';
-                    if (qtyVal) qtyVal.textContent = '1';
-                  } else {
-                    qtyVal.textContent = newQty;
-                  }
-                  updateCardHeaderBadge(cart.item_count);
-                  document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: newQty } }));
-                  if (window.refreshGhorerCart) window.refreshGhorerCart(false);
-                })
-                .catch(() => {});
-            } else {
-              if (newQty <= 0) {
-                if (qtyBox) qtyBox.classList.remove('is-active');
-                if (addBtn) addBtn.style.display = 'inline-flex';
-                if (qtyVal) qtyVal.textContent = '1';
-              } else {
-                qtyVal.textContent = newQty;
-              }
-              document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: newQty } }));
+            let cur = parseInt(qtyVal ? qtyVal.textContent : '1', 10) || 1;
+            const nextQty = Math.max(0, cur - 1);
+
+            if (window.ghUpdateVariantQuantity) {
+              window.ghUpdateVariantQuantity(variantId, nextQty, false);
             }
           });
         }
       });
     };
 
+    // Listen to global cart:updated events so cards always sync when cart changes from any source
+    document.addEventListener('cart:updated', function(e) {
+      if (e && e.detail && e.detail.cart) {
+        if (window.syncAllProductCards) window.syncAllProductCards(e.detail.cart);
+      } else if (window.syncAllProductCards) {
+        window.syncAllProductCards();
+      }
+    });
+
     // Auto-init on load
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         window.initGhProductCards();
-        window.syncGhProductCardsWithCart();
+        if (window.syncAllProductCards) window.syncAllProductCards();
       });
     } else {
       window.initGhProductCards();
-      window.syncGhProductCardsWithCart();
+      if (window.syncAllProductCards) window.syncAllProductCards();
     }
   } else {
     if (typeof window.initGhProductCards === 'function') {
