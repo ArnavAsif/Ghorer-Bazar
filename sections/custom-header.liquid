@@ -1981,6 +1981,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
+              <span class="gh-badge js-wishlist-badge-count" style="display: none;">0</span>
             </span>
             <span class="gh-action-label">Wishlist</span>
           </a>
@@ -2046,6 +2047,7 @@
                     </svg>
                   </span>
                   <span class="gh-more-item-text">Wishlists</span>
+                  <span class="gh-badge js-wishlist-badge-count" style="display: none; position: static; margin-left: auto;">0</span>
                 </a>
               </div>
 
@@ -2275,7 +2277,7 @@
             {% endfor %}
           {% else %}
             <li class="gh-quick-item"><a href="{{ more_about_url }}">About Us</a></li>
-            <li class="gh-quick-item"><a href="{{ more_wishlist_url }}">Wishlists</a></li>
+            <li class="gh-quick-item"><a href="{{ more_wishlist_url }}">Wishlists <span class="gh-badge js-wishlist-badge-count" style="display: none; position: static; margin-left: 6px;">0</span></a></li>
             <li class="gh-quick-item"><a href="{{ more_faq_url }}">FAQs</a></li>
           {% endif %}
         </ul>

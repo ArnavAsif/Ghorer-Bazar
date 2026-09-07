@@ -11,13 +11,30 @@
   "sections": {
     "main": {
       "type": "main-page",
+      "disabled": true,
       "settings": {
         "padding_top": 28,
         "padding_bottom": 28
       }
+    },
+    "custom_wishlist_page_wJ8xK1": {
+      "type": "custom-wishlist-page",
+      "name": "Wishlist Page",
+      "settings": {
+        "title": "My Wishlist",
+        "section_width": "container",
+        "columns_desktop": 4,
+        "show_add_all": true,
+        "show_clear_all": true,
+        "empty_title": "Your Wishlist is Empty",
+        "empty_desc": "You haven't saved any items yet. Browse our fresh collection and tap the heart icon to save your favorite products!",
+        "empty_btn_label": "Explore Products",
+        "empty_btn_link": "/collections/all"
+      }
     }
   },
   "order": [
-    "main"
+    "main",
+    "custom_wishlist_page_wJ8xK1"
   ]
 }

@@ -1,0 +1,336 @@
+{% comment %}
+  =============================================================================
+  GHORER BAZAR GLOBAL WISHLIST ENGINE
+  - File: snippets/ghorer-wishlist-engine.liquid
+  - Manages client-side wishlist items in localStorage (gh_wishlist_items_v1)
+  - Provides window.GhorerWishlist global API
+  - Event delegation for .js-pcard-wishlist-btn across entire site
+  - Live synchronization for all heart buttons and header/drawer badge counters
+  - Non-intrusive toast notifications with link to Wishlist page
+  =============================================================================
+{% endcomment %}
+
+<style>
+  /* Global Wishlist Toast Notification */
+  .gh-wishlist-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translate(-50%, 25px);
+    background: #1f2937;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 999999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 90vw;
+    box-sizing: border-box;
+  }
+
+  .gh-wishlist-toast.is-visible {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    pointer-events: auto;
+  }
+
+  .gh-wishlist-toast-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .gh-wishlist-toast-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .gh-wishlist-toast-text {
+    line-height: 1.35;
+    flex: 1;
+  }
+
+  .gh-wishlist-toast-link {
+    color: #f37321;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    margin-left: 8px;
+    white-space: nowrap;
+    transition: color 0.15s ease;
+  }
+
+  .gh-wishlist-toast-link:hover {
+    color: #ff914d;
+  }
+
+  @media (max-width: 640px) {
+    .gh-wishlist-toast {
+      bottom: 80px; /* Kept clear above mobile bottom bar */
+      padding: 10px 16px;
+      font-size: 13px;
+    }
+  }
+</style>
+
+<div id="ghWishlistToast" class="gh-wishlist-toast" role="status" aria-live="polite">
+  <span class="gh-wishlist-toast-icon" id="ghWishlistToastIcon"></span>
+  <span class="gh-wishlist-toast-text" id="ghWishlistToastText"></span>
+</div>
+
+<script>
+  (function() {
+    const STORAGE_KEY = 'gh_wishlist_items_v1';
+    let toastTimer = null;
+
+    function safeGetStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function safeSetStorage(items) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      } catch (e) {}
+    }
+
+    const GhorerWishlist = {
+      get: function() {
+        return safeGetStorage();
+      },
+
+      has: function(idOrHandle) {
+        if (!idOrHandle) return false;
+        const target = String(idOrHandle).trim().toLowerCase();
+        const items = this.get();
+        return items.some(item => {
+          const iId = String(item.id || '').trim().toLowerCase();
+          const iHandle = String(item.handle || '').trim().toLowerCase();
+          const iVid = String(item.variant_id || '').trim().toLowerCase();
+          return iId === target || iHandle === target || iVid === target;
+        });
+      },
+
+      count: function() {
+        return this.get().length;
+      },
+
+      add: function(productData) {
+        if (!productData) return false;
+        const id = String(productData.id || productData.handle || '');
+        if (!id) return false;
+
+        const items = this.get();
+        const exists = items.some(i => {
+          return (productData.id && String(i.id) === String(productData.id)) ||
+                 (productData.handle && String(i.handle) === String(productData.handle));
+        });
+
+        if (!exists) {
+          const newItem = {
+            id: String(productData.id || ''),
+            handle: String(productData.handle || ''),
+            variant_id: String(productData.variant_id || productData.variantId || ''),
+            title: String(productData.title || ''),
+            url: String(productData.url || ''),
+            price: String(productData.price || ''),
+            compare_price: String(productData.compare_price || productData.comparePrice || ''),
+            image: String(productData.image || ''),
+            badge: String(productData.badge || ''),
+            sale: Boolean(productData.sale === true || productData.sale === 'true')
+          };
+          items.unshift(newItem);
+          safeSetStorage(items);
+          this.syncUI();
+          this.dispatchChange('add', newItem);
+          this.showToast(true, newItem.title);
+          return true;
+        }
+        return false;
+      },
+
+      remove: function(idOrHandle) {
+        if (!idOrHandle) return false;
+        const target = String(idOrHandle).trim().toLowerCase();
+        const items = this.get();
+        let removedItem = null;
+
+        const filtered = items.filter(item => {
+          const iId = String(item.id || '').trim().toLowerCase();
+          const iHandle = String(item.handle || '').trim().toLowerCase();
+          const iVid = String(item.variant_id || '').trim().toLowerCase();
+          const match = (iId === target || iHandle === target || iVid === target);
+          if (match) removedItem = item;
+          return !match;
+        });
+
+        if (filtered.length !== items.length) {
+          safeSetStorage(filtered);
+          this.syncUI();
+          this.dispatchChange('remove', removedItem || { id: idOrHandle });
+          this.showToast(false, removedItem ? removedItem.title : '');
+          return true;
+        }
+        return false;
+      },
+
+      toggle: function(productData) {
+        if (!productData) return false;
+        const target = productData.id || productData.handle || productData.variant_id;
+        if (this.has(target)) {
+          this.remove(target);
+          return false;
+        } else {
+          this.add(productData);
+          return true;
+        }
+      },
+
+      clear: function() {
+        safeSetStorage([]);
+        this.syncUI();
+        this.dispatchChange('clear', null);
+        this.showToast(null, 'Wishlist cleared');
+      },
+
+      dispatchChange: function(action, item) {
+        try {
+          const detail = {
+            action: action,
+            item: item,
+            items: this.get(),
+            count: this.count()
+          };
+          document.dispatchEvent(new CustomEvent('wishlist:updated', { detail: detail }));
+        } catch (e) {}
+      },
+
+      syncUI: function() {
+        const count = this.count();
+        const items = this.get();
+
+        // 1. Update all badge counters (.js-wishlist-badge-count)
+        document.querySelectorAll('.js-wishlist-badge-count').forEach(badge => {
+          badge.textContent = count;
+          if (count > 0) {
+            badge.style.display = '';
+          } else {
+            badge.style.display = 'none';
+          }
+        });
+
+        // 2. Update all heart buttons (.js-pcard-wishlist-btn)
+        document.querySelectorAll('.js-pcard-wishlist-btn').forEach(btn => {
+          const id = btn.dataset.productId || '';
+          const handle = btn.dataset.productHandle || '';
+          const vid = btn.dataset.variantId || '';
+
+          const isWishlisted = items.some(i => {
+            return (id && String(i.id) === String(id)) ||
+                   (handle && String(i.handle) === String(handle)) ||
+                   (vid && String(i.variant_id) === String(vid));
+          });
+
+          if (isWishlisted) {
+            btn.classList.add('is-active');
+            btn.setAttribute('aria-label', 'Remove from Wishlist');
+            btn.setAttribute('title', 'Remove from Wishlist');
+          } else {
+            btn.classList.remove('is-active');
+            btn.setAttribute('aria-label', 'Add to Wishlist');
+            btn.setAttribute('title', 'Add to Wishlist');
+          }
+        });
+      },
+
+      showToast: function(isAdded, title) {
+        const toast = document.getElementById('ghWishlistToast');
+        const iconWrap = document.getElementById('ghWishlistToastIcon');
+        const textWrap = document.getElementById('ghWishlistToastText');
+        if (!toast || !iconWrap || !textWrap) return;
+
+        if (toastTimer) clearTimeout(toastTimer);
+
+        if (isAdded === true) {
+          iconWrap.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="#e53935" stroke="#e53935" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          `;
+          const displayTitle = title ? `&ldquo;${title}&rdquo; ` : '';
+          textWrap.innerHTML = `${displayTitle}added to your wishlist! <a href="/pages/wishlist" class="gh-wishlist-toast-link">View Wishlist</a>`;
+        } else if (isAdded === false) {
+          iconWrap.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          `;
+          const displayTitle = title ? `&ldquo;${title}&rdquo; ` : '';
+          textWrap.innerHTML = `${displayTitle}removed from your wishlist.`;
+        } else {
+          iconWrap.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          `;
+          textWrap.innerHTML = title || 'Your wishlist has been cleared.';
+        }
+
+        toast.classList.add('is-visible');
+        toastTimer = setTimeout(() => {
+          toast.classList.remove('is-visible');
+        }, 3400);
+      }
+    };
+
+    window.GhorerWishlist = GhorerWishlist;
+
+    // Global Delegated Click Handler for Wishlist Buttons
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('.js-pcard-wishlist-btn');
+      if (!btn) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const dataset = btn.dataset;
+      const productData = {
+        id: dataset.productId || '',
+        handle: dataset.productHandle || '',
+        variant_id: dataset.variantId || '',
+        title: dataset.title || '',
+        url: dataset.url || '',
+        price: dataset.price || '',
+        compare_price: dataset.comparePrice || '',
+        image: dataset.image || '',
+        badge: dataset.badge || '',
+        sale: dataset.sale === 'true'
+      };
+
+      GhorerWishlist.toggle(productData);
+    });
+
+    // Auto-sync UI when document is ready & on pageshow
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => GhorerWishlist.syncUI());
+    } else {
+      GhorerWishlist.syncUI();
+    }
+    window.addEventListener('pageshow', () => GhorerWishlist.syncUI());
+  })();
+</script>
