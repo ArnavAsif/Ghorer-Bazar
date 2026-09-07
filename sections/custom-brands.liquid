@@ -1,0 +1,776 @@
+{% comment %}
+  =============================================================================
+  SHOPIFY OUR BRANDS SECTION (FULLY RESPONSIVE SLIDER)
+  - Header: "Our Brands" with bottom border and active orange indicator bar
+  - Top-Right Link: "SEE ALL →"
+  - Responsive Card Visibility:
+      * Desktop (> 1200px): 4 brands visible
+      * Laptop (992px - 1199px): 3 brands visible
+      * Tablet (641px - 991px): 2 brands visible
+      * Mobile (≤ 640px): 2 brands visible (cleanly scaled)
+  - Touch Swipe & Mouse Drag: Smooth pointer-based dragging with drag-safe links
+  - Pagination Dots: Matches user screenshot with active solid dot and outline dot
+  - Fallback: Pre-configured with exact 5 brands from Ghorer Bazar
+  =============================================================================
+{% endcomment %}
+
+{% liquid
+  assign title = section.settings.title | default: 'Our Brands'
+  assign section_width_setting = section.settings.section_width | default: 'container'
+  case section_width_setting
+    when 'container-fluid'
+      assign section_max_w = '1820px'
+    when 'narrow'
+      assign section_max_w = '991px'
+    when 'full'
+      assign section_max_w = '100%'
+    else
+      assign section_max_w = 'var(--container-max-width, 80%)'
+  endcase
+  assign show_see_all = section.settings.show_see_all
+  assign see_all_text = section.settings.see_all_text | default: 'SEE ALL'
+  assign see_all_link = section.settings.see_all_link | default: 'https://ghorerbazar.com/all-brands'
+  assign card_h = section.settings.card_height | default: 135
+  assign autoplay = section.settings.autoplay
+  assign autoplay_speed = section.settings.autoplay_speed | default: 4 | times: 1000
+%}
+
+<style>
+  #shopify-section-{{ section.id }} {
+    --section-max-width: {{ section_max_w }};
+  }
+  {% if section_width_setting == 'container' or section_width_setting == blank %}
+    @media (max-width: 1600px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 95%;
+      }
+    }
+    @media (max-width: 479px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 100%;
+      }
+    }
+  {% endif %}
+
+  #shopify-section-{{ section.id }} .gh-brands-section {
+    width: 100%;
+    max-width: var(--section-max-width);
+    margin: 45px auto 35px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  #shopify-section-{{ section.id }} * {
+    box-sizing: border-box;
+  }
+
+  /* Header with Bottom Border and Active Orange Bar */
+  .gh-brands-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #edf0f3;
+    padding-bottom: 14px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .gh-brands-title-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding-bottom: 14px;
+    margin-bottom: -15px; /* Aligns indicator with border */
+  }
+
+  .gh-brands-title {
+    font-size: {{ section.settings.heading_size | default: 22 }}px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.2px;
+  }
+
+  .gh-brands-title-wrap::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+    background: #f37321;
+    border-radius: 2px 2px 0 0;
+  }
+
+  /* See All Link */
+  .gh-brands-see-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #f37321;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+
+  .gh-brands-see-all:hover {
+    color: #e06110;
+  }
+
+  .gh-brands-see-all svg {
+    width: 15px;
+    height: 15px;
+    stroke-width: 2.2;
+    transition: transform 0.2s ease;
+  }
+
+  .gh-brands-see-all:hover svg {
+    transform: translateX(3px);
+  }
+
+  /* Slider Main Wrapper */
+  .gh-brands-slider-container {
+    position: relative;
+    width: 100%;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .gh-brands-viewport {
+    overflow: hidden;
+    width: 100%;
+    border-radius: 14px;
+    cursor: grab;
+    touch-action: pan-y;
+  }
+
+  .gh-brands-viewport.is-dragging {
+    cursor: grabbing;
+  }
+
+  .gh-brands-track {
+    display: flex;
+    align-items: stretch;
+    gap: 20px;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+  }
+
+  /* Brand Cards */
+  .gh-brand-slide {
+    flex: 0 0 calc((100% - 3 * 20px) / 4); /* Desktop: 4 items */
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .gh-brand-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1px solid #edf0f3;
+    border-radius: 14px;
+    height: {{ card_h }}px;
+    padding: 16px 24px;
+    text-decoration: none;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    -webkit-user-drag: none;
+  }
+
+  .gh-brand-card:hover {
+    border-color: #e2e8f0;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .gh-brand-img {
+    max-width: 80%;
+    max-height: 62px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    transition: transform 0.3s ease;
+  }
+
+  .gh-brand-card:hover .gh-brand-img {
+    transform: scale(1.05);
+  }
+
+  /* --------------------------------------------------------------------------
+     RESPONSIVE BREAKPOINTS (1199px, 991px, 767px, 575px, 479px, 375px)
+     -------------------------------------------------------------------------- */
+  @media (max-width: 1199px) {
+    .gh-brands-track {
+      gap: 18px;
+    }
+    .gh-brand-slide {
+      flex: 0 0 calc((100% - 2 * 18px) / 3); /* Laptop: 3 items (33.33%) */
+    }
+  }
+
+  @media (max-width: 991px) {
+    .gh-brands-track {
+      gap: 16px;
+    }
+    .gh-brand-slide {
+      flex: 0 0 calc((100% - 16px) / 2); /* Tablet: 2 items (50%) */
+    }
+    .gh-brand-card {
+      height: 120px;
+      padding: 14px 20px;
+    }
+    .gh-brand-img {
+      max-height: 54px;
+    }
+  }
+
+  /* Tablet / Large mobile (<= 767px) */
+  @media (max-width: 767px) {
+    .gh-brands-head {
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+    .gh-brands-title {
+      font-size: 1.8rem;
+    }
+    .gh-brands-title-wrap {
+      padding-bottom: 12px;
+      margin-bottom: -13px;
+    }
+    .gh-brands-see-all {
+      font-size: 1.15rem;
+    }
+    .gh-brands-track {
+      gap: 14px;
+    }
+    .gh-brand-slide {
+      flex: 0 0 calc((100% - 14px) / 2); /* 2 items (50%) */
+    }
+    .gh-brand-card {
+      height: 110px;
+      padding: 12px 16px;
+    }
+  }
+
+  /* Large mobile (<= 575px) */
+  @media (max-width: 575px) {
+    .gh-brands-track {
+      gap: 12px;
+    }
+    .gh-brand-slide {
+      flex: 0 0 calc((100% - 12px) / 2); /* 2 items (50%) */
+    }
+    .gh-brand-card {
+      height: 95px;
+      padding: 10px 14px;
+      border-radius: 10px;
+    }
+    .gh-brand-img {
+      max-height: 44px;
+      max-width: 85%;
+    }
+  }
+
+  /* Small mobile (<= 479px): Container padding reduces to 12px */
+  @media (max-width: 479px) {
+    #shopify-section-{{ section.id }} .gh-brands-section {
+      padding-left: 12px;
+      padding-right: 12px;
+      margin: 32px auto 24px;
+    }
+    .gh-brands-track {
+      gap: 10px;
+    }
+    .gh-brand-slide {
+      flex: 0 0 calc((100% - 10px) / 2);
+    }
+    .gh-brand-card {
+      height: 85px;
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+    .gh-brand-img {
+      max-height: 38px;
+    }
+  }
+
+  /* Extra small mobile (<= 375px) */
+  @media (max-width: 375px) {
+    #shopify-section-{{ section.id }} .gh-brands-section {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .gh-brand-card {
+      height: 75px;
+      padding: 6px 8px;
+    }
+    .gh-brand-img {
+      max-height: 32px;
+    }
+  }
+
+  /* Pagination Dots (Matches Screenshot) */
+  .gh-brands-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 22px;
+  }
+
+  .gh-brands-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid #f37321;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.25s ease;
+    outline: none;
+  }
+
+  .gh-brands-dot.is-active {
+    background: #f37321;
+    border-color: #f37321;
+    transform: scale(1.15);
+  }
+</style>
+
+<div class="container gh-brands-section" id="ghBrandsSection-{{ section.id }}">
+  <div class="gh-brands-head">
+    <div class="gh-brands-title-wrap">
+      <h3 class="gh-brands-title">{{ title | escape }}</h3>
+    </div>
+
+    {% if show_see_all %}
+      <a href="{{ see_all_link }}" class="gh-brands-see-all">
+        <span>{{ see_all_text | escape }}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="gh-brands-slider-container">
+    <div class="gh-brands-viewport js-brands-viewport">
+      <div class="gh-brands-track js-brands-track">
+        
+        {% if section.blocks.size > 0 %}
+          {% for block in section.blocks %}
+            {% liquid
+              assign b_img = block.settings.image
+              assign b_link = block.settings.link | default: '#'
+              assign b_name = block.settings.brand_name | default: 'Brand Logo'
+            %}
+            <div class="gh-brand-slide" {{ block.shopify_attributes }}>
+              <a href="{{ b_link }}" class="gh-brand-card">
+                {% if b_img != blank %}
+                  <img src="{{ b_img | image_url: width: 400 }}" alt="{{ b_name | escape }}" class="gh-brand-img" loading="lazy">
+                {% else %}
+                  <span style="font-weight:700;color:#64748b;">{{ b_name }}</span>
+                {% endif %}
+              </a>
+            </div>
+          {% endfor %}
+        {% else %}
+          <!-- 5 DEMO BRANDS MATCHING USER PROVIDED CODE & SCREENSHOT -->
+          <!-- 1. Ghorer Bazar -->
+          <div class="gh-brand-slide">
+            <a href="https://ghorerbazar.com/brand/ghorerbazar" class="gh-brand-card">
+              <img src="https://backoffice.ghorerbazar.com/brand_images/7hNKq1768887947.png" alt="Ghorer Bazar" class="gh-brand-img" loading="lazy">
+            </a>
+          </div>
+
+          <!-- 2. Glarvest -->
+          <div class="gh-brand-slide">
+            <a href="https://ghorerbazar.com/brand/glarvest" class="gh-brand-card">
+              <img src="https://backoffice.ghorerbazar.com/brand_images/RNTIU1763611802.png" alt="Glarvest" class="gh-brand-img" loading="lazy">
+            </a>
+          </div>
+
+          <!-- 3. Khejuri -->
+          <div class="gh-brand-slide">
+            <a href="https://ghorerbazar.com/brand/khejuri" class="gh-brand-card">
+              <img src="https://backoffice.ghorerbazar.com/brand_images/8Gpl21757919440.png" alt="Khejuri" class="gh-brand-img" loading="lazy">
+            </a>
+          </div>
+
+          <!-- 4. Shosti Food -->
+          <div class="gh-brand-slide">
+            <a href="https://ghorerbazar.com/brand/Shosti%20food" class="gh-brand-card">
+              <img src="https://backoffice.ghorerbazar.com/brand_images/8matO1757919401.png" alt="Shosti Food" class="gh-brand-img" loading="lazy">
+            </a>
+          </div>
+
+          <!-- 5. Honeyraj -->
+          <div class="gh-brand-slide">
+            <a href="https://ghorerbazar.com/brand/Honeyraj" class="gh-brand-card">
+              <img src="https://backoffice.ghorerbazar.com/brand_images/lCfRt1759553456.png" alt="Honeyraj" class="gh-brand-img" loading="lazy">
+            </a>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- Dynamic Pagination Dots (Matches Screenshot) -->
+    <div class="gh-brands-pagination js-brands-pagination"></div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const root = document.getElementById('ghBrandsSection-{{ section.id }}');
+    if (!root) return;
+
+    const viewport = root.querySelector('.js-brands-viewport');
+    const track = root.querySelector('.js-brands-track');
+    const pagination = root.querySelector('.js-brands-pagination');
+    if (!viewport || !track) return;
+
+    const slides = track.querySelectorAll('.gh-brand-slide');
+    if (slides.length === 0) return;
+
+    let currentTranslate = 0;
+    let autoplayTimer = null;
+    const isAutoplay = {{ autoplay | json }};
+    const autoplaySpeed = {{ autoplay_speed }};
+
+    function getStepSize() {
+      if (slides.length <= 1) return 0;
+      const s0 = slides[0].getBoundingClientRect();
+      const s1 = slides[1].getBoundingClientRect();
+      return s1.left - s0.left;
+    }
+
+    function getMaxTranslate() {
+      const totalTrackWidth = track.scrollWidth;
+      const viewportWidth = viewport.offsetWidth;
+      return Math.max(0, totalTrackWidth - viewportWidth);
+    }
+
+    // Build Pagination Dots
+    function buildPagination() {
+      if (!pagination) return;
+      pagination.innerHTML = '';
+
+      const maxTrans = getMaxTranslate();
+      const step = getStepSize();
+      if (maxTrans <= 5 || step <= 0) {
+        pagination.style.display = 'none';
+        return;
+      }
+      pagination.style.display = 'flex';
+
+      const totalDots = Math.ceil(maxTrans / step) + 1;
+
+      for (let i = 0; i < totalDots; i++) {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'gh-brands-dot' + (i === 0 ? ' is-active' : '');
+        dot.setAttribute('aria-label', 'Go to brand page ' + (i + 1));
+        dot.addEventListener('click', () => {
+          scrollToTranslate(Math.min(i * step, maxTrans), true);
+          resetAutoplay();
+        });
+        pagination.appendChild(dot);
+      }
+    }
+
+    function updateDots() {
+      if (!pagination) return;
+      const dots = pagination.querySelectorAll('.gh-brands-dot');
+      if (dots.length === 0) return;
+
+      const step = getStepSize();
+      if (step <= 0) return;
+
+      let activeIndex = Math.round(currentTranslate / step);
+      activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+
+      dots.forEach((dot, idx) => {
+        if (idx === activeIndex) dot.classList.add('is-active');
+        else dot.classList.remove('is-active');
+      });
+    }
+
+    function scrollToTranslate(target, smooth) {
+      const maxTrans = getMaxTranslate();
+      currentTranslate = Math.max(0, Math.min(target, maxTrans));
+      track.style.transition = smooth ? 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
+      track.style.transform = `translateX(-${currentTranslate}px)`;
+      updateDots();
+    }
+
+    // Autoplay logic
+    function startAutoplay() {
+      if (!isAutoplay) return;
+      stopAutoplay();
+      autoplayTimer = setInterval(() => {
+        const step = getStepSize();
+        const maxTrans = getMaxTranslate();
+        if (currentTranslate >= maxTrans - 5) {
+          scrollToTranslate(0, true);
+        } else {
+          scrollToTranslate(currentTranslate + step, true);
+        }
+      }, autoplaySpeed);
+    }
+
+    function stopAutoplay() {
+      if (autoplayTimer) {
+        clearInterval(autoplayTimer);
+        autoplayTimer = null;
+      }
+    }
+
+    function resetAutoplay() {
+      stopAutoplay();
+      startAutoplay();
+    }
+
+    viewport.addEventListener('mouseenter', stopAutoplay);
+    viewport.addEventListener('mouseleave', startAutoplay);
+
+    // Mouse Drag & Touch Swipe
+    let isDragging = false;
+    let startX = 0;
+    let dragStartTranslate = 0;
+    let diffX = 0;
+    let isMoved = false;
+
+    viewport.addEventListener('dragstart', e => e.preventDefault());
+    track.addEventListener('dragstart', e => e.preventDefault());
+
+    function onPointerDown(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      isDragging = true;
+      isMoved = false;
+      startX = e.clientX;
+      dragStartTranslate = currentTranslate;
+      diffX = 0;
+
+      stopAutoplay();
+      track.style.transition = 'none';
+      viewport.classList.add('is-dragging');
+
+      try {
+        viewport.setPointerCapture(e.pointerId);
+      } catch (err) {}
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging) return;
+      diffX = e.clientX - startX;
+      if (Math.abs(diffX) > 6) isMoved = true;
+
+      const maxTrans = getMaxTranslate();
+      let target = dragStartTranslate - diffX;
+
+      if (target < 0) target = target * 0.3;
+      else if (target > maxTrans) target = maxTrans + (target - maxTrans) * 0.3;
+
+      track.style.transform = `translateX(-${target}px)`;
+    }
+
+    function onPointerUp(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      viewport.classList.remove('is-dragging');
+
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+
+      try {
+        if (viewport.hasPointerCapture(e.pointerId)) {
+          viewport.releasePointerCapture(e.pointerId);
+        }
+      } catch (err) {}
+
+      const step = getStepSize();
+      let targetTranslate = dragStartTranslate;
+
+      if (step > 0) {
+        if (diffX < -30) {
+          const count = Math.max(1, Math.round(Math.abs(diffX) / step));
+          targetTranslate = dragStartTranslate + (count * step);
+        } else if (diffX > 30) {
+          const count = Math.max(1, Math.round(diffX / step));
+          targetTranslate = dragStartTranslate - (count * step);
+        } else {
+          targetTranslate = Math.round((dragStartTranslate - diffX) / step) * step;
+        }
+      }
+
+      scrollToTranslate(targetTranslate, true);
+      diffX = 0;
+      startAutoplay();
+    }
+
+    viewport.addEventListener('pointerdown', onPointerDown);
+
+    track.addEventListener('click', e => {
+      if (isMoved) {
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(() => { isMoved = false; }, 60);
+      }
+    }, true);
+
+    window.addEventListener('resize', () => {
+      buildPagination();
+      const step = getStepSize();
+      const maxTrans = getMaxTranslate();
+      if (step > 0) {
+        currentTranslate = Math.min(Math.round(currentTranslate / step) * step, maxTrans);
+      } else {
+        currentTranslate = 0;
+      }
+      scrollToTranslate(currentTranslate, false);
+    });
+
+    buildPagination();
+    startAutoplay();
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Our Brands",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Header Settings"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Heading",
+      "default": "Our Brands"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 18,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "label": "Heading Font Size",
+      "default": 22
+    },
+    {
+      "type": "checkbox",
+      "id": "show_see_all",
+      "label": "Show 'See All' Link",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "see_all_text",
+      "label": "'See All' Text",
+      "default": "SEE ALL"
+    },
+    {
+      "type": "url",
+      "id": "see_all_link",
+      "label": "'See All' Link"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section Width",
+      "options": [
+        { "value": "container", "label": "Container (1320px)" },
+        { "value": "container-fluid", "label": "Fluid Container (1820px)" },
+        { "value": "narrow", "label": "Narrow Container (991px)" },
+        { "value": "full", "label": "Full Width (100%)" }
+      ],
+      "default": "container"
+    },
+    {
+      "type": "header",
+      "content": "Card & Slider Settings"
+    },
+    {
+      "type": "range",
+      "id": "card_height",
+      "min": 90,
+      "max": 180,
+      "step": 5,
+      "unit": "px",
+      "label": "Card Height (Desktop)",
+      "default": 135
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Enable Autoplay",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "unit": "s",
+      "label": "Autoplay Interval",
+      "default": 4
+    }
+  ],
+  "blocks": [
+    {
+      "type": "brand_item",
+      "name": "Brand Item",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Brand Logo"
+        },
+        {
+          "type": "text",
+          "id": "brand_name",
+          "label": "Brand Name",
+          "default": "Brand Name"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Brand Link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Our Brands",
+      "blocks": [
+        { "type": "brand_item" },
+        { "type": "brand_item" },
+        { "type": "brand_item" },
+        { "type": "brand_item" },
+        { "type": "brand_item" }
+      ]
+    }
+  ]
+}
+{% endschema %}

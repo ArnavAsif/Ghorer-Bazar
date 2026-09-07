@@ -1,0 +1,970 @@
+{% comment %}
+  =============================================================================
+  SHOPIFY FEATURED CATEGORIES SECTION (FULLY RESPONSIVE CAROUSEL)
+  - True Responsive Ladder (8 -> 7 -> 6 -> 5 -> 4 -> 3 -> 2)
+  - Hover: Only inside image zooms smoothly on card hover (card stays static)
+  - Drag Support: Full mouse drag (desktop) + touch swipe (mobile) with smooth snap
+  - Fallback: Pre-configured with Ghorer Bazar demo illustrations and categories
+  =============================================================================
+{% endcomment %}
+
+{% liquid
+  assign title = section.settings.title | default: 'Featured Categories'
+  assign section_width_setting = section.settings.section_width | default: 'container'
+  case section_width_setting
+    when 'container-fluid'
+      assign section_max_w = '1820px'
+    when 'narrow'
+      assign section_max_w = '991px'
+    when 'full'
+      assign section_max_w = '100%'
+    else
+      assign section_max_w = 'var(--container-max-width, 80%)'
+  endcase
+  assign items_d = section.settings.items_desktop | default: 8
+  assign card_bg = section.settings.card_bg | default: '#f8fafc'
+  assign card_radius = section.settings.card_radius | default: 18
+  assign autoplay = section.settings.autoplay
+  assign autoplay_speed = section.settings.autoplay_speed | default: 4 | times: 1000
+%}
+
+<style>
+  #shopify-section-{{ section.id }} {
+    --section-max-width: {{ section_max_w }};
+  }
+  {% if section_width_setting == 'container' or section_width_setting == blank %}
+    @media (max-width: 1600px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 95%;
+      }
+    }
+    @media (max-width: 479px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 100%;
+      }
+    }
+  {% endif %}
+
+  #shopify-section-{{ section.id }} .gh-cat-section {
+    width: 100%;
+    max-width: var(--section-max-width);
+    margin: 35px auto 25px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  #shopify-section-{{ section.id }} * {
+    box-sizing: border-box;
+  }
+
+  .gh-cat-head {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .gh-cat-title {
+    font-size: {{ section.settings.heading_size | default: 24 }}px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    line-height: 1.3;
+    letter-spacing: -0.2px;
+  }
+
+  /* Slider Main Wrapper */
+  .gh-cat-slider-container {
+    position: relative;
+    width: 100%;
+    user-select: none;
+    -webkit-user-select: none;
+    padding: 6px 0 10px;
+  }
+
+  .gh-cat-viewport {
+    overflow: hidden;
+    width: 100%;
+    border-radius: 12px;
+    cursor: grab;
+    touch-action: pan-y;
+  }
+
+  .gh-cat-viewport.is-dragging {
+    cursor: grabbing;
+  }
+
+  .gh-cat-track {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    transition: transform 0.38s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+  }
+
+  /* --------------------------------------------------------------------------
+     RESPONSIVE BREAKPOINTS (1199px, 991px, 767px, 575px, 479px, 375px)
+     -------------------------------------------------------------------------- */
+  /* Extra Large / Large Desktop (> 1199px): 8 items */
+  .gh-cat-slide {
+    flex: 0 0 calc((100% - ({{ items_d | minus: 1 }} * 16px)) / {{ items_d }});
+    min-width: 0;
+    text-align: center;
+  }
+
+  /* Breakpoint 1: Large desktop (1199px and below): 6 items */
+  @media (max-width: 1199px) {
+    .gh-cat-track {
+      gap: 14px;
+    }
+    .gh-cat-slide {
+      flex: 0 0 calc((100% - (5 * 14px)) / 6);
+    }
+  }
+
+  /* Breakpoint 2: Desktop / Laptop (991px and below): 5 items */
+  @media (max-width: 991px) {
+    .gh-cat-track {
+      gap: 12px;
+    }
+    .gh-cat-slide {
+      flex: 0 0 calc((100% - (4 * 12px)) / 5);
+    }
+    .gh-cat-arrow-btn {
+      width: 32px;
+      height: 32px;
+    }
+    .gh-cat-arrow-btn.prev { left: -14px; }
+    .gh-cat-arrow-btn.next { right: -14px; }
+    .gh-cat-name { font-size: 1.3rem; }
+  }
+
+  /* Breakpoint 3: Tablet (767px and below): 4 items */
+  @media (max-width: 767px) {
+    .gh-cat-track {
+      gap: 12px;
+    }
+    .gh-cat-slide {
+      flex: 0 0 calc((100% - (3 * 12px)) / 4);
+    }
+    .gh-cat-card-box {
+      padding: 12px;
+      border-radius: 16px;
+    }
+    .gh-cat-name {
+      font-size: 1.25rem;
+      margin-top: 8px;
+    }
+  }
+
+  /* Breakpoint 4: Large mobile (575px and below): 3 items */
+  @media (max-width: 575px) {
+    .gh-cat-track {
+      gap: 10px;
+    }
+    .gh-cat-slide {
+      flex: 0 0 calc((100% - (2 * 10px)) / 3);
+    }
+    .gh-cat-card-box {
+      padding: 10px;
+      border-radius: 14px;
+    }
+    .gh-cat-name {
+      font-size: 1.2rem;
+      margin-top: 7px;
+    }
+    .gh-cat-arrow-btn {
+      width: 28px;
+      height: 28px;
+      top: calc(50% - 16px);
+    }
+    .gh-cat-arrow-btn.prev { left: -8px; }
+    .gh-cat-arrow-btn.next { right: -8px; }
+    .gh-cat-arrow-btn svg { width: 14px; height: 14px; }
+  }
+
+  /* Breakpoint 5: Small mobile (479px and below): 2 items + 12px container padding */
+  @media (max-width: 479px) {
+    #shopify-section-{{ section.id }} .gh-cat-section {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+    .gh-cat-track {
+      gap: 10px;
+    }
+    .gh-cat-slide {
+      flex: 0 0 calc((100% - (1 * 10px)) / 2);
+    }
+    .gh-cat-card-box {
+      padding: 10px;
+      border-radius: 14px;
+    }
+    .gh-cat-name {
+      font-size: 1.2rem;
+      margin-top: 7px;
+    }
+    .gh-cat-arrow-btn {
+      width: 26px;
+      height: 26px;
+      top: calc(50% - 16px);
+    }
+    .gh-cat-arrow-btn.prev { left: -6px; }
+    .gh-cat-arrow-btn.next { right: -6px; }
+    .gh-cat-arrow-btn svg { width: 13px; height: 13px; }
+  }
+
+  /* Breakpoint 6: Extra small mobile (375px and below) */
+  @media (max-width: 375px) {
+    #shopify-section-{{ section.id }} .gh-cat-section {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+    .gh-cat-card-box {
+      padding: 8px;
+    }
+    .gh-cat-name {
+      font-size: 1.1rem;
+    }
+  }
+
+  /* Card Inner Styling */
+  .gh-cat-card-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    outline: none;
+    -webkit-user-drag: none;
+    user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .gh-cat-card-box {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: {{ card_bg }};
+    border-radius: {{ card_radius }}px;
+    border: 1px solid #f0f2f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    position: relative;
+    overflow: hidden;
+    -webkit-user-drag: none;
+    user-drag: none;
+    user-select: none;
+  }
+
+  /* Only inside image zooms on hover */
+  .gh-cat-img {
+    max-width: 85%;
+    max-height: 85%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+  }
+
+  .gh-cat-card-link:hover .gh-cat-img {
+    transform: scale(1.12);
+  }
+
+  .gh-cat-name {
+    margin: 10px 0 0 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2b2f33;
+    text-align: center;
+    line-height: 1.35;
+    transition: color 0.2s ease;
+    word-break: break-word;
+  }
+
+  .gh-cat-card-link:hover .gh-cat-name {
+    color: #f37321;
+  }
+
+  /* Navigation Arrows (Matches Screenshot: Circular Orange Buttons) */
+  .gh-cat-arrow-btn {
+    position: absolute;
+    top: calc(50% - 15px);
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    background: #f37321;
+    border: none;
+    border-radius: 50%;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 3px 10px rgba(243, 115, 33, 0.35);
+    transition: background 0.2s, transform 0.2s, opacity 0.2s;
+    outline: none;
+  }
+
+  .gh-cat-arrow-btn:hover {
+    background: #e06110;
+    transform: translateY(-50%) scale(1.08);
+  }
+
+  .gh-cat-arrow-btn:active {
+    transform: translateY(-50%) scale(0.96);
+  }
+
+  .gh-cat-arrow-btn.prev {
+    left: -18px;
+  }
+
+  .gh-cat-arrow-btn.next {
+    right: -18px;
+  }
+
+  .gh-cat-arrow-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.4;
+    pointer-events: none;
+  }
+
+  .gh-cat-arrow-btn.is-disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+</style>
+
+<div class="container gh-cat-section">
+  {% if title != blank %}
+    <div class="gh-cat-head">
+      <h3 class="gh-cat-title">{{ title | escape }}</h3>
+    </div>
+  {% endif %}
+
+  <div class="gh-cat-slider-container" id="ghCatContainer-{{ section.id }}">
+    
+    <!-- Previous Button -->
+    <button type="button" class="gh-cat-arrow-btn prev is-disabled" id="ghCatPrev-{{ section.id }}" aria-label="Previous Category">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+
+    <!-- Slider Viewport -->
+    <div class="gh-cat-viewport" id="ghCatViewport-{{ section.id }}">
+      <div class="gh-cat-track" id="ghCatTrack-{{ section.id }}">
+        
+        {% if section.blocks.size > 0 %}
+          {% for block in section.blocks %}
+            {% liquid
+              assign coll = block.settings.collection
+              assign custom_img = block.settings.image
+              assign custom_title = block.settings.title
+              assign custom_link = block.settings.link
+
+              assign item_url = '#'
+              if custom_link != blank
+                assign item_url = custom_link
+              elsif coll != blank
+                assign item_url = coll.url
+              endif
+
+              assign item_title = 'Category'
+              if custom_title != blank
+                assign item_title = custom_title
+              elsif coll != blank
+                assign item_title = coll.title
+              endif
+            %}
+
+            <div class="gh-cat-slide" {{ block.shopify_attributes }}>
+              <a href="{{ item_url }}" class="gh-cat-card-link" draggable="false">
+                <div class="gh-cat-card-box">
+                  {% if custom_img != blank %}
+                    <img 
+                      src="{{ custom_img | image_url: width: 300 }}" 
+                      alt="{{ item_title | escape }}" 
+                      class="gh-cat-img" 
+                      loading="lazy"
+                      draggable="false"
+                    >
+                  {% elsif coll.featured_image != blank %}
+                    <img 
+                      src="{{ coll.featured_image | image_url: width: 300 }}" 
+                      alt="{{ item_title | escape }}" 
+                      class="gh-cat-img" 
+                      loading="lazy"
+                      draggable="false"
+                    >
+                  {% else %}
+                    <!-- Fallback placeholder -->
+                    <img 
+                      src="https://backoffice.ghorerbazar.com/category_images/HJOrw1774766749.png" 
+                      alt="{{ item_title | escape }}" 
+                      class="gh-cat-img"
+                      draggable="false"
+                    >
+                  {% endif %}
+                </div>
+                <p class="gh-cat-name">{{ item_title }}</p>
+              </a>
+            </div>
+          {% endfor %}
+        {% else %}
+          <!-- DEFAULT SAMPLE PREVIEW CATEGORIES MATCHING USER SCREENSHOT -->
+          <div class="gh-cat-slide">
+            <a href="/collections/all" class="gh-cat-card-link" draggable="false">
+              <div class="gh-cat-card-box">
+                <img src="https://backoffice.ghorerbazar.com/category_images/HJOrw1774766749.png" alt="Organic" class="gh-cat-img" draggable="false">
+              </div>
+              <p class="gh-cat-name">Organic</p>
+            </a>
+          </div>
+          <div class="gh-cat-slide">
+            <a href="/collections/all" class="gh-cat-card-link" draggable="false">
+              <div class="gh-cat-card-box">
+                <img src="https://backoffice.ghorerbazar.com/category_images/KbWCe1774766391.png" alt="Honey" class="gh-cat-img" draggable="false">
+              </div>
+              <p class="gh-cat-name">Honey</p>
+            </a>
+          </div>
+          <div class="gh-cat-slide">
+            <a href="/collections/all" class="gh-cat-card-link" draggable="false">
+              <div class="gh-cat-card-box">
+                <img src="https://backoffice.ghorerbazar.com/category_images/wgCR01774766402.png" alt="Dates" class="gh-cat-img" draggable="false">
+              </div>
+              <p class="gh-cat-name">Dates</p>
+            </a>
+          </div>
+          <div class="gh-cat-slide">
+            <a href="/collections/all" class="gh-cat-card-link" draggable="false">
+              <div class="gh-cat-card-box">
+                <img src="https://backoffice.ghorerbazar.com/category_images/hXyU71774766413.png" alt="Spices" class="gh-cat-img" draggable="false">
+              </div>
+              <p class="gh-cat-name">Spices</p>
+            </a>
+          </div>
+          <div class="gh-cat-slide">
+            <a href="/collections/all" class="gh-cat-card-link" draggable="false">
+              <div class="gh-cat-card-box">
+                <img src="https://backoffice.ghorerbazar.com/category_images/5u39t1774766425.png" alt="Nuts & Seeds" class="gh-cat-img" draggable="false">
+              </div>
+              <p class="gh-cat-name">Nuts & Seeds</p>
+            </a>
+          </div>
+          <div class="gh-cat-slide">
+            <a href="/collections/all" class="gh-cat-card-link" draggable="false">
+              <div class="gh-cat-card-box">
+                <img src="https://backoffice.ghorerbazar.com/category_images/AZG2N1774766442.png" alt="Beverage" class="gh-cat-img" draggable="false">
+              </div>
+              <p class="gh-cat-name">Beverage</p>
+            </a>
+          </div>
+          <div class="gh-cat-slide">
+            <a href="/collections/all" class="gh-cat-card-link" draggable="false">
+              <div class="gh-cat-card-box">
+                <img src="https://backoffice.ghorerbazar.com/category_images/Emr6I1774766667.png" alt="Rice" class="gh-cat-img" draggable="false">
+              </div>
+              <p class="gh-cat-name">Rice</p>
+            </a>
+          </div>
+          <div class="gh-cat-slide">
+            <a href="/collections/all" class="gh-cat-card-link" draggable="false">
+              <div class="gh-cat-card-box">
+                <img src="https://backoffice.ghorerbazar.com/category_images/Lo11M1774766468.png" alt="Flours & Lentils" class="gh-cat-img" draggable="false">
+              </div>
+              <p class="gh-cat-name">Flours & Lentils</p>
+            </a>
+          </div>
+          <div class="gh-cat-slide">
+            <a href="/collections/all" class="gh-cat-card-link" draggable="false">
+              <div class="gh-cat-card-box">
+                <img src="https://backoffice.ghorerbazar.com/category_images/Zf99g1774766372.png" alt="Oil & Ghee" class="gh-cat-img" draggable="false">
+              </div>
+              <p class="gh-cat-name">Oil & Ghee</p>
+            </a>
+          </div>
+          <div class="gh-cat-slide">
+            <a href="/collections/all" class="gh-cat-card-link" draggable="false">
+              <div class="gh-cat-card-box">
+                <img src="https://backoffice.ghorerbazar.com/category_images/JxBh61774766494.png" alt="Functional Food" class="gh-cat-img" draggable="false">
+              </div>
+              <p class="gh-cat-name">Functional Food</p>
+            </a>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- Next Button -->
+    <button type="button" class="gh-cat-arrow-btn next" id="ghCatNext-{{ section.id }}" aria-label="Next Category">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </button>
+
+  </div>
+</div>
+
+<script>
+  (function() {
+    function initCatSlider() {
+      const container = document.getElementById('ghCatContainer-{{ section.id }}');
+      const viewport = document.getElementById('ghCatViewport-{{ section.id }}');
+      const track = document.getElementById('ghCatTrack-{{ section.id }}');
+      const prevBtn = document.getElementById('ghCatPrev-{{ section.id }}');
+      const nextBtn = document.getElementById('ghCatNext-{{ section.id }}');
+
+      if (!viewport || !track) return;
+
+      const slides = track.querySelectorAll('.gh-cat-slide');
+      const totalSlides = slides.length;
+      if (totalSlides === 0) return;
+
+      let autoplayTimer = null;
+      const autoplayEnabled = {{ autoplay | json }};
+      const autoplaySpeed = {{ autoplay_speed }};
+
+      function getStepSize() {
+        if (slides.length <= 1) return 0;
+        const s0 = slides[0].getBoundingClientRect();
+        const s1 = slides[1].getBoundingClientRect();
+        return s1.left - s0.left;
+      }
+
+      function getMaxTranslate() {
+        const totalTrackWidth = track.scrollWidth;
+        const viewportWidth = viewport.offsetWidth;
+        return Math.max(0, totalTrackWidth - viewportWidth);
+      }
+
+      function getScrollStepCount() {
+        const w = window.innerWidth;
+        if (w <= 575) return 1;
+        if (w <= 991) return 2;
+        return 3;
+      }
+
+      let currentTranslate = 0;
+
+      function updateArrows() {
+        const maxTrans = getMaxTranslate();
+        if (maxTrans <= 0) {
+          if (prevBtn) prevBtn.classList.add('is-disabled');
+          if (nextBtn) nextBtn.classList.add('is-disabled');
+          return;
+        }
+        if (prevBtn) {
+          if (currentTranslate <= 2) prevBtn.classList.add('is-disabled');
+          else prevBtn.classList.remove('is-disabled');
+        }
+        if (nextBtn) {
+          if (currentTranslate >= maxTrans - 2) nextBtn.classList.add('is-disabled');
+          else nextBtn.classList.remove('is-disabled');
+        }
+      }
+
+      function scrollToTranslate(target, smooth) {
+        const maxTrans = getMaxTranslate();
+        currentTranslate = Math.max(0, Math.min(target, maxTrans));
+        track.style.transition = smooth ? 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
+        track.style.transform = `translateX(-${currentTranslate}px)`;
+        updateArrows();
+      }
+
+      function scrollNext() {
+        const step = getStepSize();
+        const maxTrans = getMaxTranslate();
+        const count = getScrollStepCount();
+        if (currentTranslate >= maxTrans - 2) {
+          scrollToTranslate(0, true);
+        } else {
+          scrollToTranslate(currentTranslate + (step * count), true);
+        }
+      }
+
+      function scrollPrev() {
+        const step = getStepSize();
+        const maxTrans = getMaxTranslate();
+        const count = getScrollStepCount();
+        if (currentTranslate <= 2) {
+          scrollToTranslate(maxTrans, true);
+        } else {
+          scrollToTranslate(currentTranslate - (step * count), true);
+        }
+      }
+
+      if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+          scrollNext();
+          resetAutoplay();
+        });
+      }
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+          scrollPrev();
+          resetAutoplay();
+        });
+      }
+
+      // Autoplay
+      function startAutoplay() {
+        if (!autoplayEnabled) return;
+        stopAutoplay();
+        autoplayTimer = setInterval(scrollNext, autoplaySpeed);
+      }
+
+      function stopAutoplay() {
+        if (autoplayTimer) {
+          clearInterval(autoplayTimer);
+          autoplayTimer = null;
+        }
+      }
+
+      function resetAutoplay() {
+        stopAutoplay();
+        startAutoplay();
+      }
+
+      viewport.addEventListener('mouseenter', stopAutoplay);
+      viewport.addEventListener('mouseleave', startAutoplay);
+
+      // =======================================================================
+      // DRAG & SWIPE SUPPORT (MOUSE DRAG + TOUCH SWIPE)
+      // =======================================================================
+      let isDragging = false;
+      let startX = 0;
+      let dragStartTranslate = 0;
+      let diffX = 0;
+      let isMoved = false;
+
+      /* FIX: raised the "moved" threshold from 6px to 12px.
+         6px was too sensitive - normal hand tremor while clicking a
+         card was being registered as a drag, which caused the click
+         handler below to call preventDefault() and block navigation
+         into the collection. 12px reliably distinguishes a real swipe
+         from a click/tap. */
+      const MOVE_THRESHOLD = 12;
+
+      // Prevent native browser link and image ghost dragging
+      viewport.addEventListener('dragstart', e => e.preventDefault());
+      track.addEventListener('dragstart', e => e.preventDefault());
+
+      function onPointerDown(e) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        if (e.target.closest('.gh-cat-arrow-btn')) return;
+
+        isDragging = true;
+        isMoved = false;
+        startX = e.clientX;
+        dragStartTranslate = currentTranslate;
+        diffX = 0;
+
+        stopAutoplay();
+        track.style.transition = 'none';
+        viewport.classList.add('is-dragging');
+
+        /* FIX: removed viewport.setPointerCapture() here.
+           Capturing the pointer on the viewport was redirecting the
+           resulting "click" event's target away from the card <a>
+           tag in some browsers, which stopped the browser's default
+           navigation action from firing - i.e. clicking a card never
+           opened the collection. We already listen on window for
+           pointermove/pointerup, so capture isn't needed at all. */
+
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerUp);
+      }
+
+      function onPointerMove(e) {
+        if (!isDragging) return;
+        diffX = e.clientX - startX;
+
+        if (Math.abs(diffX) > MOVE_THRESHOLD) {
+          isMoved = true;
+        }
+
+        const maxTrans = getMaxTranslate();
+        let target = dragStartTranslate - diffX;
+
+        // Rubber-band resistance
+        if (target < 0) {
+          target = target * 0.3;
+        } else if (target > maxTrans) {
+          target = maxTrans + (target - maxTrans) * 0.3;
+        }
+
+        track.style.transform = `translateX(-${target}px)`;
+      }
+
+      function onPointerUp(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        viewport.classList.remove('is-dragging');
+
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerUp);
+
+        const step = getStepSize();
+        let targetTranslate = dragStartTranslate;
+
+        if (step > 0) {
+          if (diffX < -30) {
+            // Dragged left -> Advance forward by at least 1 card
+            const count = Math.max(1, Math.round(Math.abs(diffX) / step));
+            targetTranslate = dragStartTranslate + (count * step);
+          } else if (diffX > 30) {
+            // Dragged right -> Go backward by at least 1 card
+            const count = Math.max(1, Math.round(diffX / step));
+            targetTranslate = dragStartTranslate - (count * step);
+          } else {
+            // Slight drag under 30px -> Snap back to nearest
+            targetTranslate = Math.round((dragStartTranslate - diffX) / step) * step;
+          }
+        }
+
+        scrollToTranslate(targetTranslate, true);
+        diffX = 0;
+        startAutoplay();
+      }
+
+      viewport.addEventListener('pointerdown', onPointerDown);
+
+      // Prevent link navigation only when an actual drag occurred
+      track.addEventListener('click', e => {
+        if (isMoved) {
+          e.preventDefault();
+          e.stopPropagation();
+          setTimeout(() => { isMoved = false; }, 60);
+        }
+      }, true);
+
+      // Re-align on window resize
+      window.addEventListener('resize', () => {
+        const step = getStepSize();
+        const maxTrans = getMaxTranslate();
+        if (step > 0) {
+          currentTranslate = Math.min(Math.round(currentTranslate / step) * step, maxTrans);
+        } else {
+          currentTranslate = 0;
+        }
+        scrollToTranslate(currentTranslate, false);
+      });
+
+      updateArrows();
+      startAutoplay();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initCatSlider);
+    } else {
+      initCatSlider();
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Featured Categories",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Heading Settings"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Heading",
+      "default": "Featured Categories"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 18,
+      "max": 36,
+      "step": 1,
+      "unit": "px",
+      "label": "Heading Font Size",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "Layout & Responsiveness"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section Width",
+      "options": [
+        { "value": "container", "label": "Container (1320px)" },
+        { "value": "container-fluid", "label": "Fluid Container (1820px)" },
+        { "value": "narrow", "label": "Narrow Container (991px)" },
+        { "value": "full", "label": "Full Width (100%)" }
+      ],
+      "default": "container"
+    },
+    {
+      "type": "range",
+      "id": "items_desktop",
+      "min": 6,
+      "max": 10,
+      "step": 1,
+      "label": "Items on Large Screens (> 1400px)",
+      "default": 8,
+      "info": "Fully responsive: Automatically drops 8 → 7 → 6 → 5 → 4 → 3 → 2 based on device screen size."
+    },
+    {
+      "type": "header",
+      "content": "Card Styling"
+    },
+    {
+      "type": "color",
+      "id": "card_bg",
+      "label": "Card Background Color",
+      "default": "#f8fafc"
+    },
+    {
+      "type": "range",
+      "id": "card_radius",
+      "min": 10,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "Card Corner Radius",
+      "default": 18
+    },
+    {
+      "type": "header",
+      "content": "Slider Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Enable Autoplay",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "unit": "s",
+      "label": "Autoplay Speed (seconds)",
+      "default": 4
+    }
+  ],
+  "blocks": [
+    {
+      "type": "category",
+      "name": "Category Item",
+      "settings": [
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Select Collection"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Custom Category Icon / Image",
+          "info": "Overrides default collection image with hand-drawn icon"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Custom Category Title",
+          "info": "Overrides collection title if filled"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Custom URL Link",
+          "info": "Overrides collection link if filled"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Featured Categories",
+      "blocks": [
+        {
+          "type": "category",
+          "settings": {
+            "title": "Organic"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Honey"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Dates"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Spices"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Nuts & Seeds"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Beverage"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Rice"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Flours & Lentils"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Oil & Ghee"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Functional Food"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

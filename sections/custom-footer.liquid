@@ -1,0 +1,833 @@
+{% comment %}
+  =============================================================================
+  SHOPIFY REUSABLE CUSTOM FOOTER SECTION
+  - Matches exact Ghorer Bazar footer design
+  - Left Col: Logo, Bio text, Address, Phone, Email, Social icons, App download badges
+  - 4 Link Columns: Information, Shop By, Support, Consumer Policy
+  - Bottom Bar: Copyright notice & "Pay With" SSLCommerz payment gateway banner
+  - Fully responsive: 5 columns on Desktop, 2x2 grid on Tablet/Mobile, stacked bottom bar
+  =============================================================================
+{% endcomment %}
+
+{% liquid
+  assign bg_color = section.settings.bg_color | default: '#ffffff'
+  assign text_color = section.settings.text_color | default: '#4b5563'
+  assign heading_color = section.settings.heading_color | default: '#1f2937'
+  assign accent_color = section.settings.accent_color | default: '#f37321'
+  assign section_width_setting = section.settings.section_width | default: 'container'
+  case section_width_setting
+    when 'container-fluid'
+      assign section_max_w = '1820px'
+    when 'narrow'
+      assign section_max_w = '991px'
+    when 'full'
+      assign section_max_w = '100%'
+    else
+      assign section_max_w = 'var(--container-max-width, 80%)'
+  endcase
+  assign logo_img = section.settings.logo | default: 'https://backoffice.ghorerbazar.com/company_logo/qJaKf1768887846.png'
+  assign about_text = section.settings.about_text | default: 'Ghorer Bazar is an e-commerce platform dedicated to providing safe and reliable food to every home.'
+  assign address = section.settings.address | default: 'Rampura, Dhaka, Bangladesh'
+  assign phone = section.settings.phone | default: '+8809642922922'
+  assign email = section.settings.email | default: 'contact@ghorerbazar.com'
+  assign copyright = section.settings.copyright_text | default: 'Copyright © 2026 GhorerBazar'
+  assign payment_banner = section.settings.payment_banner | default: 'https://securepay.sslcommerz.com/public/image/SSLCommerz-Pay-With-logo-All-Size-03.png'
+%}
+
+<style>
+  #shopify-section-{{ section.id }} {
+    --section-max-width: {{ section_max_w }};
+  }
+  {% if section_width_setting == 'container' or section_width_setting == blank %}
+    @media (max-width: 1600px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 95%;
+      }
+    }
+    @media (max-width: 479px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 100%;
+      }
+    }
+  {% endif %}
+
+  #shopify-section-{{ section.id }} .gh-footer-section {
+    background-color: {{ bg_color }};
+    border-top: 1px solid #edf0f3;
+    padding-top: 48px;
+    font-family: inherit;
+    color: {{ text_color }};
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  #shopify-section-{{ section.id }} * {
+    box-sizing: border-box;
+  }
+
+  .gh-footer-container {
+    width: 100%;
+    max-width: var(--section-max-width);
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+
+  /* --------------------------------------------------------------------------
+     TOP MAIN FOOTER GRID (5 COLUMNS ON DESKTOP)
+     -------------------------------------------------------------------------- */
+  .gh-footer-grid {
+    display: grid;
+    grid-template-columns: 2.2fr 1fr 1fr 1fr 1fr;
+    gap: 36px 28px;
+    padding-bottom: 40px;
+  }
+
+  /* BRAND & CONTACT COLUMN */
+  .gh-footer-brand-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gh-footer-logo-wrap {
+    display: inline-block;
+    margin-bottom: 16px;
+    text-decoration: none;
+  }
+
+  .gh-footer-logo {
+    max-height: 48px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+  }
+
+  .gh-footer-bio {
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: {{ text_color }};
+    margin: 0 0 20px 0;
+    max-width: 320px;
+  }
+
+  /* Contact List */
+  .gh-footer-contact-list {
+    list-style: none;
+    margin: 0 0 22px 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .gh-footer-contact-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    color: {{ text_color }};
+    line-height: 1.4;
+  }
+
+  .gh-footer-contact-item a {
+    color: {{ text_color }};
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .gh-footer-contact-item a:hover {
+    color: {{ accent_color }};
+  }
+
+  .gh-footer-contact-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    stroke: #6b7280;
+    fill: none;
+  }
+
+  /* Social Icons */
+  .gh-footer-socials {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+
+  .gh-footer-social-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #fff5ee;
+    color: {{ accent_color }};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease;
+  }
+
+  .gh-footer-social-btn:hover {
+    background: {{ accent_color }};
+    color: #ffffff;
+    transform: translateY(-2px);
+  }
+
+  .gh-footer-social-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
+
+  /* Download App Section */
+  .gh-footer-app-wrap {
+    margin-top: auto;
+  }
+
+  .gh-footer-app-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: {{ heading_color }};
+    margin: 0 0 14px 0;
+    display: block;
+  }
+
+  .gh-footer-app-badges {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .gh-app-badge-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 40px;
+    box-sizing: border-box;
+  }
+
+  .gh-app-badge-btn:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Google Play Button Style */
+  .gh-app-badge-google {
+    background: #000000;
+    color: #ffffff;
+    border: 1px solid #000000;
+  }
+
+  /* App Store Button Style */
+  .gh-app-badge-apple {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #d1d5db;
+  }
+
+  .gh-app-badge-texts {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.1;
+  }
+
+  .gh-app-badge-sub {
+    font-size: 8.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    opacity: 0.85;
+  }
+
+  .gh-app-badge-main {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+
+  /* --------------------------------------------------------------------------
+     NAVIGATION LINK COLUMNS (COL 2 - 5)
+     -------------------------------------------------------------------------- */
+  .gh-footer-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gh-footer-heading {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: {{ heading_color }};
+    margin: 0 0 18px 0;
+    line-height: 1.3;
+    letter-spacing: -0.1px;
+  }
+
+  .gh-footer-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .gh-footer-link {
+    font-size: 13.5px;
+    color: {{ text_color }};
+    text-decoration: none;
+    line-height: 1.4;
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: inline-block;
+  }
+
+  .gh-footer-link:hover {
+    color: {{ accent_color }};
+    transform: translateX(2px);
+  }
+
+  /* --------------------------------------------------------------------------
+     BOTTOM COPYRIGHT & PAYMENT BAR
+     -------------------------------------------------------------------------- */
+  .gh-footer-bottom {
+    border-top: 1px solid #edf0f3;
+    padding: 22px 0 28px 0;
+    margin-top: 10px;
+  }
+
+  .gh-footer-bottom-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .gh-footer-copy {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  .gh-footer-payment-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .gh-footer-pay-label {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: {{ heading_color }};
+    white-space: nowrap;
+  }
+
+  .gh-footer-payment-img {
+    width: 100%;
+    object-fit: contain;
+    display: block;
+    border-radius: 4px;
+  }
+
+  /* --------------------------------------------------------------------------
+     RESPONSIVE BREAKPOINTS (Desktop/Laptop: 991px, Tablet: 767px, Mobile: 575px, 479px, 375px)
+     -------------------------------------------------------------------------- */
+  /* Breakpoint 2: Desktop / Laptop (991px and below) */
+  @media (max-width: 991px) {
+    .gh-footer-grid {
+      grid-template-columns: 1.8fr 1fr 1fr;
+      gap: 32px 20px;
+    }
+    .gh-footer-brand-col {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+  }
+
+  /* Breakpoint 3: Tablet (767px and below) */
+  @media (max-width: 767px) {
+    #shopify-section-{{ section.id }} .gh-footer-section {
+      padding-top: 36px;
+    }
+
+    .gh-footer-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 28px 16px;
+      padding-bottom: 28px;
+    }
+
+    .gh-footer-brand-col {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 24px;
+    }
+
+    .gh-footer-bio {
+      max-width: 100%;
+    }
+
+    .gh-footer-heading {
+      font-size: 1.45rem;
+      margin-bottom: 14px;
+    }
+
+    .gh-footer-link {
+      font-size: 1.3rem;
+    }
+
+    .gh-footer-bottom-wrap {
+      flex-direction: column-reverse;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+    }
+
+    .gh-footer-payment-wrap {
+      flex-direction: column;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .gh-footer-payment-img {
+      max-width: 100%;
+      height: auto;
+    }
+  }
+
+  /* Breakpoint 4: Large mobile (575px and below) */
+  @media (max-width: 575px) {
+    .gh-footer-grid {
+      gap: 24px 14px;
+    }
+  }
+
+  /* Breakpoint 5: Small mobile (479px and below): container padding reduces to 12px */
+  @media (max-width: 479px) {
+    .gh-footer-container {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+    .gh-footer-grid {
+      grid-template-columns: 1fr;
+      gap: 22px;
+    }
+  }
+
+  /* Breakpoint 6: Extra small mobile (375px and below) */
+  @media (max-width: 375px) {
+    .gh-footer-container {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+  }
+</style>
+
+<footer class="gh-footer-section" id="ghFooterSection-{{ section.id }}">
+  <div class="container gh-footer-container">
+    
+    <!-- TOP 5-COLUMN GRID -->
+    <div class="gh-footer-grid">
+      
+      <!-- COLUMN 1: BRAND INFO & APPS -->
+      <div class="gh-footer-brand-col">
+        <!-- Logo -->
+        <a href="{{ routes.root_url | default: '/' }}" class="gh-footer-logo-wrap" title="{{ shop.name | escape }}">
+          {% if section.settings.logo.src %}
+            <img src="{{ section.settings.logo | image_url: width: 220 }}" alt="{{ shop.name | escape }}" class="gh-footer-logo" loading="lazy">
+          {% else %}
+            <img src="{{ logo_img }}" alt="{{ shop.name | default: 'GhorerBazar' | escape }}" class="gh-footer-logo" loading="lazy">
+          {% endif %}
+        </a>
+
+        <!-- Bio Paragraph -->
+        <p class="gh-footer-bio">
+          {{ about_text }}
+        </p>
+
+        <!-- Contact List with Icons -->
+        <ul class="gh-footer-contact-list">
+          {% if address != blank %}
+            <li class="gh-footer-contact-item">
+              <svg class="gh-footer-contact-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span>{{ address }}</span>
+            </li>
+          {% endif %}
+
+          {% if phone != blank %}
+            <li class="gh-footer-contact-item">
+              <svg class="gh-footer-contact-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+              </svg>
+              <a href="tel:{{ phone | remove: ' ' }}">{{ phone }}</a>
+            </li>
+          {% endif %}
+
+          {% if email != blank %}
+            <li class="gh-footer-contact-item">
+              <svg class="gh-footer-contact-icon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+              </svg>
+              <a href="mailto:{{ email }}">{{ email }}</a>
+            </li>
+          {% endif %}
+        </ul>
+
+        <!-- Social Icons (Facebook, Twitter/X, Instagram) -->
+        <div class="gh-footer-socials">
+          <!-- Facebook -->
+          <a href="{{ section.settings.facebook_url | default: 'https://facebook.com/ghorerbazarbd' }}" class="gh-footer-social-btn" aria-label="Facebook" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+          </a>
+          <!-- Twitter / X -->
+          <a href="{{ section.settings.twitter_url | default: 'https://twitter.com' }}" class="gh-footer-social-btn" aria-label="Twitter" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/></svg>
+          </a>
+          <!-- Instagram -->
+          <a href="{{ section.settings.instagram_url | default: 'https://instagram.com' }}" class="gh-footer-social-btn" aria-label="Instagram" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+        </div>
+
+        <!-- Download App Section -->
+        <div class="gh-footer-app-wrap">
+          <span class="gh-footer-app-title">{{ section.settings.app_title | default: 'Download App on Mobile :' }}</span>
+          <div class="gh-footer-app-badges">
+            <!-- Google Play Badge -->
+            <a href="{{ section.settings.google_play_url | default: 'https://play.google.com' }}" class="gh-app-badge-btn gh-app-badge-google" target="_blank" rel="noopener">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M3.6 1.7A1.5 1.5 0 0 0 3 3v18c0 .5.2.9.6 1.3l9.8-9.8L3.6 1.7z" fill="#00C1FF"/>
+                <path d="M16.5 9.4 13.4 12.5l3.1 3.1 3.5-2c1-.6 1-1.6 0-2.2l-3.5-2z" fill="#FFC800"/>
+                <path d="m13.4 12.5-9.8 9.8c.4.4.9.4 1.5.1l11.4-6.8-3.1-3.1z" fill="#FF3333"/>
+                <path d="M3.6 1.7 13.4 12.5l3.1-3.1L5.1 2.6c-.6-.3-1.1-.3-1.5.1z" fill="#00E676"/>
+              </svg>
+              <div class="gh-app-badge-texts">
+                <span class="gh-app-badge-sub">GET IT ON</span>
+                <span class="gh-app-badge-main">Google Play</span>
+              </div>
+            </a>
+
+            <!-- App Store Badge -->
+            <a href="{{ section.settings.app_store_url | default: 'https://apple.com/app-store/' }}" class="gh-app-badge-btn gh-app-badge-apple" target="_blank" rel="noopener">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.65-.8 1.1-1.92.98-3.04-.95.04-2.1.64-2.77 1.43-.59.69-1.11 1.82-.97 2.91 1.07.08 2.13-.53 2.76-1.3z"/>
+              </svg>
+              <div class="gh-app-badge-texts">
+                <span class="gh-app-badge-sub">Download on the</span>
+                <span class="gh-app-badge-main">App Store</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUMN 2: INFORMATION -->
+      <div class="gh-footer-col">
+        <h4 class="gh-footer-heading">{{ section.settings.menu_1_title | default: 'Information' }}</h4>
+        <ul class="gh-footer-menu">
+          {% if section.settings.menu_1 != blank %}
+            {% for link in section.settings.menu_1.links %}
+              <li><a href="{{ link.url }}" class="gh-footer-link">{{ link.title }}</a></li>
+            {% endfor %}
+          {% else %}
+            <li><a href="/pages/about-us" class="gh-footer-link">About us</a></li>
+            <li><a href="/pages/contact-us" class="gh-footer-link">Contact us</a></li>
+            <li><a href="/pages/company-information" class="gh-footer-link">Company Information</a></li>
+            <li><a href="/blogs/news" class="gh-footer-link">Ghorer Bazar Stories</a></li>
+            <li><a href="/policies/terms-of-service" class="gh-footer-link">Terms & Conditions</a></li>
+            <li><a href="/policies/privacy-policy" class="gh-footer-link">Privacy Policy</a></li>
+            <li><a href="/pages/careers" class="gh-footer-link">Careers</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <!-- COLUMN 3: SHOP BY -->
+      <div class="gh-footer-col">
+        <h4 class="gh-footer-heading">{{ section.settings.menu_2_title | default: 'Shop By' }}</h4>
+        <ul class="gh-footer-menu">
+          {% if section.settings.menu_2 != blank %}
+            {% for link in section.settings.menu_2.links %}
+              <li><a href="{{ link.url }}" class="gh-footer-link">{{ link.title }}</a></li>
+            {% endfor %}
+          {% else %}
+            <li><a href="/collections/oil-ghee" class="gh-footer-link">Oil & Ghee</a></li>
+            <li><a href="/collections/honey" class="gh-footer-link">Honey</a></li>
+            <li><a href="/collections/dates" class="gh-footer-link">Dates</a></li>
+            <li><a href="/collections/spices" class="gh-footer-link">Spices</a></li>
+            <li><a href="/collections/nuts-seeds" class="gh-footer-link">Nuts & Seeds</a></li>
+            <li><a href="/collections/beverage" class="gh-footer-link">Beverage</a></li>
+            <li><a href="/collections/functional-foods" class="gh-footer-link">Functional Foods</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <!-- COLUMN 4: SUPPORT -->
+      <div class="gh-footer-col">
+        <h4 class="gh-footer-heading">{{ section.settings.menu_3_title | default: 'Support' }}</h4>
+        <ul class="gh-footer-menu">
+          {% if section.settings.menu_3 != blank %}
+            {% for link in section.settings.menu_3.links %}
+              <li><a href="{{ link.url }}" class="gh-footer-link">{{ link.title }}</a></li>
+            {% endfor %}
+          {% else %}
+            <li><a href="/pages/support-center" class="gh-footer-link">Support Center</a></li>
+            <li><a href="/pages/how-to-order" class="gh-footer-link">How to Order</a></li>
+            <li><a href="/pages/order-tracking" class="gh-footer-link">Order Tracking</a></li>
+            <li><a href="/pages/payment" class="gh-footer-link">Payment</a></li>
+            <li><a href="/pages/shipping" class="gh-footer-link">Shipping</a></li>
+            <li><a href="/pages/faq" class="gh-footer-link">FAQ</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <!-- COLUMN 5: CONSUMER POLICY -->
+      <div class="gh-footer-col">
+        <h4 class="gh-footer-heading">{{ section.settings.menu_4_title | default: 'Consumer Policy' }}</h4>
+        <ul class="gh-footer-menu">
+          {% if section.settings.menu_4 != blank %}
+            {% for link in section.settings.menu_4.links %}
+              <li><a href="{{ link.url }}" class="gh-footer-link">{{ link.title }}</a></li>
+            {% endfor %}
+          {% else %}
+            <li><a href="/pages/happy-return" class="gh-footer-link">Happy Return</a></li>
+            <li><a href="/policies/refund-policy" class="gh-footer-link">Refund Policy</a></li>
+            <li><a href="/pages/exchange" class="gh-footer-link">Exchange</a></li>
+            <li><a href="/pages/cancellation" class="gh-footer-link">Cancellation</a></li>
+            <li><a href="/pages/pre-order" class="gh-footer-link">Pre-Order</a></li>
+            <li><a href="/pages/extra-discount" class="gh-footer-link">Extra Discount</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM BAR: COPYRIGHT & SSLCOMMERZ PAYMENT METHODS -->
+    <div class="gh-footer-bottom">
+      <div class="gh-footer-bottom-wrap">
+        <p class="gh-footer-copy">{{ copyright }}</p>
+
+        <div class="gh-footer-payment-wrap">
+          <span class="gh-footer-pay-label">{{ section.settings.pay_label }}</span>
+          {% if section.settings.payment_banner.src %}
+            <img src="{{ section.settings.payment_banner | image_url: width: 2000 }}" alt="Payment Methods" class="gh-footer-payment-img" loading="lazy">
+          {% else %}
+            <img src="{{ payment_banner }}" alt="Payment Gateways" class="gh-footer-payment-img" loading="lazy">
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "Custom Footer",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Branding & About"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Footer Logo"
+    },
+    {
+      "type": "textarea",
+      "id": "about_text",
+      "label": "About Text",
+      "default": "Ghorer Bazar is an e-commerce platform dedicated to providing safe and reliable food to every home."
+    },
+    {
+      "type": "text",
+      "id": "address",
+      "label": "Address",
+      "default": "Rampura, Dhaka, Bangladesh"
+    },
+    {
+      "type": "text",
+      "id": "phone",
+      "label": "Phone Number",
+      "default": "+8809642922922"
+    },
+    {
+      "type": "text",
+      "id": "email",
+      "label": "Email Address",
+      "default": "contact@ghorerbazar.com"
+    },
+    {
+      "type": "header",
+      "content": "Social Media Links"
+    },
+    {
+      "type": "url",
+      "id": "facebook_url",
+      "label": "Facebook URL"
+    },
+    {
+      "type": "url",
+      "id": "twitter_url",
+      "label": "Twitter / X URL"
+    },
+    {
+      "type": "url",
+      "id": "instagram_url",
+      "label": "Instagram URL"
+    },
+    {
+      "type": "header",
+      "content": "App Download Links"
+    },
+    {
+      "type": "text",
+      "id": "app_title",
+      "label": "App Section Title",
+      "default": "Download App on Mobile :"
+    },
+    {
+      "type": "url",
+      "id": "google_play_url",
+      "label": "Google Play URL"
+    },
+    {
+      "type": "url",
+      "id": "app_store_url",
+      "label": "App Store URL"
+    },
+    {
+      "type": "header",
+      "content": "Navigation Menus"
+    },
+    {
+      "type": "text",
+      "id": "menu_1_title",
+      "label": "Menu 1 Title",
+      "default": "Information"
+    },
+    {
+      "type": "link_list",
+      "id": "menu_1",
+      "label": "Select Menu 1"
+    },
+    {
+      "type": "text",
+      "id": "menu_2_title",
+      "label": "Menu 2 Title",
+      "default": "Shop By"
+    },
+    {
+      "type": "link_list",
+      "id": "menu_2",
+      "label": "Select Menu 2"
+    },
+    {
+      "type": "text",
+      "id": "menu_3_title",
+      "label": "Menu 3 Title",
+      "default": "Support"
+    },
+    {
+      "type": "link_list",
+      "id": "menu_3",
+      "label": "Select Menu 3"
+    },
+    {
+      "type": "text",
+      "id": "menu_4_title",
+      "label": "Menu 4 Title",
+      "default": "Consumer Policy"
+    },
+    {
+      "type": "link_list",
+      "id": "menu_4",
+      "label": "Select Menu 4"
+    },
+    {
+      "type": "header",
+      "content": "Bottom Bar Settings"
+    },
+    {
+      "type": "text",
+      "id": "copyright_text",
+      "label": "Copyright Text",
+      "default": "Copyright © 2026 GhorerBazar"
+    },
+    {
+      "type": "text",
+      "id": "pay_label",
+      "label": "Payment Label"
+    },
+    {
+      "type": "image_picker",
+      "id": "payment_banner",
+      "label": "Payment Banner Image"
+    },
+    {
+      "type": "header",
+      "content": "Styling & Colors"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading Color",
+      "default": "#1f2937"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text & Link Color",
+      "default": "#4b5563"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent Color (Orange)",
+      "default": "#f37321"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section Width",
+      "options": [
+        { "value": "container", "label": "Container (1320px)" },
+        { "value": "container-fluid", "label": "Fluid Container (1820px)" },
+        { "value": "narrow", "label": "Narrow Container (991px)" },
+        { "value": "full", "label": "Full Width (100%)" }
+      ],
+      "default": "container"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Footer"
+    }
+  ]
+}
+{% endschema %}

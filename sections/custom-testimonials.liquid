@@ -1,0 +1,984 @@
+{% comment %}
+  =============================================================================
+  SHOPIFY TESTIMONIALS / REVIEW SLIDER SECTION
+  - File: sections/custom-testimonials.liquid
+  - Style: Clean white rounded cards with star ratings and author thumbnails
+  - Carousel: Touch swipe & mouse drag with smooth inertia
+  - Pagination: Ghorer Bazar style orange active solid dot and hollow circle dots
+  - Exact match with user uploaded screenshot and demo HTML
+  =============================================================================
+{% endcomment %}
+
+{% liquid
+  assign container_w = section.settings.container_width | default: 95
+  assign card_bg = section.settings.card_bg | default: '#ffffff'
+  assign card_border = section.settings.card_border | default: '#eaedf1'
+  assign radius = section.settings.border_radius | default: 16
+  assign star_color = section.settings.star_color | default: '#f59e0b'
+  assign autoplay = section.settings.autoplay
+  assign autoplay_speed = section.settings.autoplay_speed | default: 4 | times: 1000
+  assign section_width_setting = section.settings.section_width | default: 'container'
+  case section_width_setting
+    when 'container-fluid'
+      assign section_max_w = '1820px'
+    when 'narrow'
+      assign section_max_w = '991px'
+    when 'full'
+      assign section_max_w = '100%'
+    else
+      assign section_max_w = 'var(--container-max-width, 80%)'
+  endcase
+%}
+
+<style>
+  #shopify-section-{{ section.id }} {
+    --section-max-width: {{ section_max_w }};
+  }
+  {% if section_width_setting == 'container' or section_width_setting == blank %}
+    @media (max-width: 1600px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 95%;
+      }
+    }
+    @media (max-width: 479px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 100%;
+      }
+    }
+  {% endif %}
+
+  #shopify-section-{{ section.id }} .gh-testimonial-section {
+    width: 100%;
+    padding-top: {{ section.settings.margin_top | default: 40 }}px;
+    padding-bottom: {{ section.settings.margin_bottom | default: 45 }}px;
+    background-color: {{ section.settings.section_bg | default: '#fafbfd' }};
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #shopify-section-{{ section.id }} * {
+    box-sizing: border-box;
+  }
+
+  .gh-testimonial-container-{{ section.id }} {
+    width: 100%;
+    max-width: var(--section-max-width);
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+    box-sizing: border-box;
+  }
+
+  /* Optional Section Header */
+  {% if section.settings.title != blank %}
+    .gh-testimonial-head {
+      margin-bottom: 28px;
+      text-align: {{ section.settings.heading_align | default: 'left' }};
+    }
+    .gh-testimonial-head-title {
+      font-size: {{ section.settings.heading_size | default: 24 }}px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.3px;
+    }
+    .gh-testimonial-head-subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin: 0;
+    }
+  {% endif %}
+
+  /* Slider Main Wrapper */
+  .gh-testimonial-slider-wrap-{{ section.id }} {
+    position: relative;
+    width: 100%;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .gh-testimonial-viewport-{{ section.id }} {
+    overflow: hidden;
+    width: 100%;
+    cursor: grab;
+    touch-action: pan-y;
+  }
+
+  .gh-testimonial-viewport-{{ section.id }}.is-dragging {
+    cursor: grabbing;
+  }
+
+  .gh-testimonial-track-{{ section.id }} {
+    display: flex;
+    align-items: stretch;
+    gap: 20px;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+  }
+
+  /* Testimonial Card */
+  .gh-testimonial-slide {
+    flex: 0 0 455px; /* Exact width matching demo code & screenshot */
+    max-width: 85vw;
+    min-width: 0;
+    display: flex;
+  }
+
+  .gh-testimonial-card-{{ section.id }} {
+    background: {{ card_bg }};
+    border: 1px solid {{ card_border }};
+    border-radius: {{ radius }}px;
+    padding: 28px 28px 26px;
+    width: 100%;
+    min-height: 235px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    -webkit-user-drag: none;
+  }
+
+  .gh-testimonial-card-{{ section.id }}:hover {
+    transform: translateY(-3px);
+    border-color: #dbe0e6;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Review Text */
+  .gh-testimonial-text {
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: #4b5563;
+    margin: 0 0 16px 0;
+    font-weight: 400;
+    word-break: break-word;
+  }
+
+  /* Rating Stars */
+  .gh-testimonial-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px 0;
+  }
+
+  .gh-testimonial-rating li {
+    display: inline-flex;
+    color: {{ star_color }};
+  }
+
+  .gh-testimonial-rating svg {
+    width: 15px;
+    height: 15px;
+    fill: currentColor;
+    display: block;
+  }
+
+  /* Author Row - Floats right under stars exactly as in screenshot */
+  .gh-testimonial-author {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 0;
+    padding-top: 2px;
+  }
+
+  .gh-testimonial-author-thumb {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f1f3f5;
+  }
+
+  .gh-testimonial-author-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+
+  .gh-testimonial-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .gh-testimonial-info h5 {
+    font-size: 15.5px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .gh-testimonial-info span {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.2;
+  }
+
+  /* --------------------------------------------------------------------------
+     RESPONSIVE BREAKPOINTS (Desktop/Laptop: 991px, Tablet: 767px, Mobile: 575px, 479px, 375px)
+     -------------------------------------------------------------------------- */
+  @media (max-width: 991px) {
+    .gh-testimonial-slide {
+      flex: 0 0 380px;
+    }
+    .gh-testimonial-card-{{ section.id }} {
+      padding: 24px 22px 22px;
+    }
+    .gh-testimonial-text {
+      font-size: 1.4rem;
+    }
+  }
+
+  /* Tablet / Large mobile (<= 767px) */
+  @media (max-width: 767px) {
+    .gh-testimonial-slide {
+      flex: 0 0 340px;
+    }
+    .gh-testimonial-card-{{ section.id }} {
+      padding: 20px 18px 18px;
+    }
+  }
+
+  /* Large mobile (<= 575px) */
+  @media (max-width: 575px) {
+    .gh-testimonial-slide {
+      flex: 0 0 calc(100vw - 48px);
+      max-width: calc(100vw - 48px);
+    }
+    .gh-testimonial-card-{{ section.id }} {
+      border-radius: 14px;
+    }
+    .gh-testimonial-author-thumb {
+      width: 44px;
+      height: 44px;
+    }
+    .gh-testimonial-info h5 {
+      font-size: 1.45rem;
+    }
+    .gh-testimonial-info span {
+      font-size: 1.25rem;
+    }
+  }
+
+  /* Small mobile (<= 479px): container padding reduces to 12px */
+  @media (max-width: 479px) {
+    .gh-testimonial-container-{{ section.id }} {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+    .gh-testimonial-slide {
+      flex: 0 0 calc(100vw - 36px);
+      max-width: calc(100vw - 36px);
+    }
+    .gh-testimonial-card-{{ section.id }} {
+      padding: 16px 14px 14px;
+    }
+  }
+
+  /* Extra small mobile (<= 375px) */
+  @media (max-width: 375px) {
+    .gh-testimonial-container-{{ section.id }} {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+  }
+
+  /* Pagination Dots (Matches Ghorer Bazar: 1 active solid, 2 hollow rings) */
+  .gh-testimonial-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 26px;
+  }
+
+  .gh-testimonial-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    background: transparent;
+    border: 1.5px solid #f37321;
+    transition: all 0.25s ease;
+    outline: none;
+  }
+
+  .gh-testimonial-dot:hover {
+    opacity: 0.8;
+  }
+
+  .gh-testimonial-dot.is-active {
+    background: #f37321;
+    border-color: #f37321;
+    transform: scale(1.1);
+  }
+</style>
+
+<section class="gh-testimonial-section" id="ghTestimonialSection-{{ section.id }}">
+  <div class="container gh-testimonial-container-{{ section.id }}">
+    
+    {% if section.settings.title != blank %}
+      <div class="gh-testimonial-head">
+        <h2 class="gh-testimonial-head-title">{{ section.settings.title | escape }}</h2>
+        {% if section.settings.subtitle != blank %}
+          <p class="gh-testimonial-head-subtitle">{{ section.settings.subtitle | escape }}</p>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <div class="gh-testimonial-slider-wrap-{{ section.id }}">
+      <div class="gh-testimonial-viewport-{{ section.id }} js-testimonial-viewport">
+        <div class="gh-testimonial-track-{{ section.id }} js-testimonial-track">
+
+          {% if section.blocks.size > 0 %}
+            {% for block in section.blocks %}
+              {% assign rating_num = block.settings.rating | default: 5 %}
+              <div class="gh-testimonial-slide" {{ block.shopify_attributes }}>
+                <div class="gh-testimonial-card-{{ section.id }}">
+                  
+                  <p class="gh-testimonial-text">
+                    {{ block.settings.review_text | escape | newline_to_br }}
+                  </p>
+
+                  <ul class="gh-testimonial-rating">
+                    {% for i in (1..5) %}
+                      <li>
+                        {% if i <= rating_num %}
+                          <!-- Solid Star -->
+                          <svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                        {% else %}
+                          <!-- Empty Star Outline -->
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+
+                  <div class="gh-testimonial-author">
+                    <div class="gh-testimonial-author-thumb">
+                      {% if block.settings.author_image != blank %}
+                        <img src="{{ block.settings.author_image | image_url: width: 120 }}" alt="{{ block.settings.author_name | escape }}" loading="lazy">
+                      {% elsif block.settings.author_image_url != blank %}
+                        <img src="{{ block.settings.author_image_url }}" alt="{{ block.settings.author_name | escape }}" loading="lazy">
+                      {% else %}
+                        <img src="https://backoffice.ghorerbazar.com/testimonial/NgeCj1758183204.jpg" alt="Avatar" loading="lazy">
+                      {% endif %}
+                    </div>
+
+                    <div class="gh-testimonial-info">
+                      <h5>{{ block.settings.author_name | default: 'Customer Name' | escape }}</h5>
+                      <span>{{ block.settings.author_role | default: 'Customer' | escape }}</span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            {% endfor %}
+
+          {% else %}
+            <!-- ================================================================= -->
+            <!-- 5 DEFAULT DEMO REVIEWS MATCHING USER PROVIDED CODE & SCREENSHOT  -->
+            <!-- ================================================================= -->
+
+            <!-- Review 1: Ahmod Al Kamran -->
+            <div class="gh-testimonial-slide">
+              <div class="gh-testimonial-card-{{ section.id }}">
+                <p class="gh-testimonial-text">
+                  আমি একজন ঘরের বাজারের নিয়মিত কাস্টমার। আমি শুধু ঘরের বাজার থেকে এই যে প্রোডাক্ট আনি এমন নয়। আমি অনেক জায়গা থেকে এই প্রোডাক্ট এনেছি। তবে আমার মতে এসব পেজ থেকে ঘরের বাজার সেরা।
+                </p>
+                <ul class="gh-testimonial-rating">
+                  {% for i in (1..5) %}
+                    <li><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></li>
+                  {% endfor %}
+                </ul>
+                <div class="gh-testimonial-author">
+                  <div class="gh-testimonial-author-thumb">
+                    <img src="https://backoffice.ghorerbazar.com/testimonial/NgeCj1758183204.jpg" alt="Ahmod Al Kamran" loading="lazy">
+                  </div>
+                  <div class="gh-testimonial-info">
+                    <h5>Ahmod Al Kamran</h5>
+                    <span>Student</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Review 2: Shahriar Khan Abir -->
+            <div class="gh-testimonial-slide">
+              <div class="gh-testimonial-card-{{ section.id }}">
+                <p class="gh-testimonial-text">
+                  I don’t like ghee, but my father really loves it. So I bought some ghee for him. He said this ghee is the best he has ever had
+                </p>
+                <ul class="gh-testimonial-rating">
+                  {% for i in (1..5) %}
+                    <li><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></li>
+                  {% endfor %}
+                </ul>
+                <div class="gh-testimonial-author">
+                  <div class="gh-testimonial-author-thumb">
+                    <img src="https://backoffice.ghorerbazar.com/testimonial/7XD7v1758183150.jpg" alt="Shahriar Khan Abir" loading="lazy">
+                  </div>
+                  <div class="gh-testimonial-info">
+                    <h5>Shahriar Khan Abir</h5>
+                    <span>Service Holder</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Review 3: Fariha Akter Tumpa -->
+            <div class="gh-testimonial-slide">
+              <div class="gh-testimonial-card-{{ section.id }}">
+                <p class="gh-testimonial-text">
+                  এই অবিশ্বাসের জগতে আস্থাশীল একটি প্রতিষ্ঠান ঘরের বাজার।
+                </p>
+                <ul class="gh-testimonial-rating">
+                  {% for i in (1..5) %}
+                    <li><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></li>
+                  {% endfor %}
+                </ul>
+                <div class="gh-testimonial-author">
+                  <div class="gh-testimonial-author-thumb">
+                    <img src="https://backoffice.ghorerbazar.com/testimonial/PZDyt1758183005.jpg" alt="Fariha Akter Tumpa" loading="lazy">
+                  </div>
+                  <div class="gh-testimonial-info">
+                    <h5>Fariha Akter Tumpa</h5>
+                    <span>Entrepreneur</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Review 4: Ayesha Khan -->
+            <div class="gh-testimonial-slide">
+              <div class="gh-testimonial-card-{{ section.id }}">
+                <p class="gh-testimonial-text">
+                  ২য় বার Ghorerbazar থেকে অর্ডার করলাম। আগের মতো এবারও দারুণ কোয়ালিটি আর দ্রুত ডেলিভারি পেয়েছি। একদম সন্তুষ্ট।
+                </p>
+                <ul class="gh-testimonial-rating">
+                  {% for i in (1..5) %}
+                    <li><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></li>
+                  {% endfor %}
+                </ul>
+                <div class="gh-testimonial-author">
+                  <div class="gh-testimonial-author-thumb">
+                    <img src="https://backoffice.ghorerbazar.com/testimonial/0Jti61758182944.png" alt="Ayesha Khan" loading="lazy">
+                  </div>
+                  <div class="gh-testimonial-info">
+                    <h5>Ayesha Khan</h5>
+                    <span>Banker</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Review 5: Sultana Yesmin -->
+            <div class="gh-testimonial-slide">
+              <div class="gh-testimonial-card-{{ section.id }}">
+                <p class="gh-testimonial-text">
+                  Thanks Ghorerbazar for free Honeyraj. Of course, I got it for being a regular customer.
+                </p>
+                <ul class="gh-testimonial-rating">
+                  {% for i in (1..5) %}
+                    <li><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></li>
+                  {% endfor %}
+                </ul>
+                <div class="gh-testimonial-author">
+                  <div class="gh-testimonial-author-thumb">
+                    <img src="https://backoffice.ghorerbazar.com/testimonial/3qPit1758182893.jpg" alt="Sultana Yesmin" loading="lazy">
+                  </div>
+                  <div class="gh-testimonial-info">
+                    <h5>Sultana Yesmin</h5>
+                    <span>Housewife</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          {% endif %}
+
+        </div>
+      </div>
+
+      <!-- Dynamic Pagination Dots (Matches Screenshot) -->
+      <div class="gh-testimonial-pagination js-testimonial-pagination"></div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  (function() {
+    const root = document.getElementById('ghTestimonialSection-{{ section.id }}');
+    if (!root) return;
+
+    const viewport = root.querySelector('.js-testimonial-viewport');
+    const track = root.querySelector('.js-testimonial-track');
+    const pagination = root.querySelector('.js-testimonial-pagination');
+    if (!viewport || !track) return;
+
+    const slides = track.querySelectorAll('.gh-testimonial-slide');
+    if (slides.length === 0) return;
+
+    let currentTranslate = 0;
+    let autoplayTimer = null;
+    const isAutoplay = {{ autoplay | json }};
+    const autoplaySpeed = {{ autoplay_speed }};
+
+    function getStepSize() {
+      if (slides.length <= 1) return 0;
+      const s0 = slides[0].getBoundingClientRect();
+      const s1 = slides[1].getBoundingClientRect();
+      return s1.left - s0.left;
+    }
+
+    function getMaxTranslate() {
+      const totalTrackWidth = track.scrollWidth;
+      const viewportWidth = viewport.offsetWidth;
+      return Math.max(0, totalTrackWidth - viewportWidth);
+    }
+
+    // Build Pagination Dots
+    function buildPagination() {
+      if (!pagination) return;
+      pagination.innerHTML = '';
+
+      const maxTrans = getMaxTranslate();
+      const step = getStepSize();
+      if (maxTrans <= 5 || step <= 0) {
+        pagination.style.display = 'none';
+        return;
+      }
+      pagination.style.display = 'flex';
+
+      const totalDots = Math.max(1, Math.round(maxTrans / step) + 1);
+
+      for (let i = 0; i < totalDots; i++) {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'gh-testimonial-dot' + (i === 0 ? ' is-active' : '');
+        dot.setAttribute('aria-label', 'Go to review ' + (i + 1));
+        const targetPos = (i === totalDots - 1) ? maxTrans : Math.min(i * step, maxTrans);
+        dot.addEventListener('click', () => {
+          scrollToTranslate(targetPos, true);
+          resetAutoplay();
+        });
+        pagination.appendChild(dot);
+      }
+    }
+
+    function updateDots() {
+      if (!pagination) return;
+      const dots = pagination.querySelectorAll('.gh-testimonial-dot');
+      if (dots.length === 0) return;
+
+      const maxTrans = getMaxTranslate();
+      if (maxTrans <= 0) return;
+
+      let activeIndex = Math.round(currentTranslate / (maxTrans / Math.max(1, dots.length - 1)));
+      if (isNaN(activeIndex)) activeIndex = 0;
+      activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+
+      dots.forEach((dot, idx) => {
+        if (idx === activeIndex) dot.classList.add('is-active');
+        else dot.classList.remove('is-active');
+      });
+    }
+
+    function setTranslate(val, animated) {
+      if (animated) {
+        track.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+      } else {
+        track.style.transition = 'none';
+      }
+      currentTranslate = val;
+      track.style.transform = `translate3d(-${val}px, 0px, 0px)`;
+    }
+
+    function scrollToTranslate(val, animated = true) {
+      const maxTrans = getMaxTranslate();
+      const clamped = Math.max(0, Math.min(val, maxTrans));
+      setTranslate(clamped, animated);
+      updateDots();
+    }
+
+    // Autoplay implementation
+    function startAutoplay() {
+      if (!isAutoplay) return;
+      stopAutoplay();
+      autoplayTimer = setInterval(() => {
+        const step = getStepSize();
+        const maxTrans = getMaxTranslate();
+        let nextTrans = currentTranslate + step;
+        if (nextTrans > maxTrans + 5) {
+          nextTrans = 0; // loop back to first
+        }
+        scrollToTranslate(nextTrans, true);
+      }, autoplaySpeed);
+    }
+
+    function stopAutoplay() {
+      if (autoplayTimer) {
+        clearInterval(autoplayTimer);
+        autoplayTimer = null;
+      }
+    }
+
+    function resetAutoplay() {
+      if (isAutoplay) {
+        stopAutoplay();
+        startAutoplay();
+      }
+    }
+
+    // Mouse Drag & Touch Swipe implementation
+    let isPointerDown = false;
+    let startX = 0;
+    let initialTranslate = 0;
+    let hasMoved = false;
+
+    function onPointerDown(e) {
+      isPointerDown = true;
+      hasMoved = false;
+      startX = e.pageX || (e.touches && e.touches[0].pageX);
+      initialTranslate = currentTranslate;
+      stopAutoplay();
+      viewport.classList.add('is-dragging');
+    }
+
+    function onPointerMove(e) {
+      if (!isPointerDown) return;
+      const currentX = e.pageX || (e.touches && e.touches[0].pageX);
+      const diffX = currentX - startX;
+
+      if (Math.abs(diffX) > 4) {
+        hasMoved = true;
+      }
+
+      const maxTrans = getMaxTranslate();
+      let newTranslate = initialTranslate - diffX;
+
+      // Elastic resistance on edges
+      if (newTranslate < 0) {
+        newTranslate = newTranslate * 0.35;
+      } else if (newTranslate > maxTrans) {
+        newTranslate = maxTrans + (newTranslate - maxTrans) * 0.35;
+      }
+
+      setTranslate(newTranslate, false);
+    }
+
+    function onPointerUp(e) {
+      if (!isPointerDown) return;
+      isPointerDown = false;
+      viewport.classList.remove('is-dragging');
+
+      const currentX = e.pageX || (e.changedTouches && e.changedTouches[0].pageX) || startX;
+      const diffX = currentX - startX;
+      const step = getStepSize();
+      const maxTrans = getMaxTranslate();
+
+      if (Math.abs(diffX) > 45 && step > 0) {
+        if (diffX < 0) {
+          // dragged left -> advance
+          const targetIndex = Math.ceil(initialTranslate / step) + 1;
+          scrollToTranslate(targetIndex * step, true);
+        } else {
+          // dragged right -> retreat
+          const targetIndex = Math.floor(initialTranslate / step) - 1;
+          scrollToTranslate(Math.max(0, targetIndex * step), true);
+        }
+      } else if (step > 0) {
+        // snap to nearest
+        const nearestIndex = Math.round(currentTranslate / step);
+        scrollToTranslate(nearestIndex * step, true);
+      } else {
+        scrollToTranslate(currentTranslate, true);
+      }
+
+      resetAutoplay();
+    }
+
+    // Attach drag/swipe listeners
+    viewport.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    viewport.addEventListener('touchstart', onPointerDown, { passive: true });
+    viewport.addEventListener('touchmove', onPointerMove, { passive: true });
+    viewport.addEventListener('touchend', onPointerUp, { passive: true });
+
+    // Pause on hover
+    root.addEventListener('mouseenter', stopAutoplay);
+    root.addEventListener('mouseleave', resetAutoplay);
+
+    // Resize handler
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        buildPagination();
+        scrollToTranslate(currentTranslate, false);
+      }, 150);
+    });
+
+    // Init
+    buildPagination();
+    startAutoplay();
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Customer Testimonials",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section Heading (Optional)"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Heading Text",
+      "default": "Customer Reviews"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Subheading",
+      "default": "What our customers are saying about us"
+    },
+    {
+      "type": "select",
+      "id": "heading_align",
+      "label": "Heading Alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 18,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "label": "Heading Font Size",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "Card & Style Settings"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section Width",
+      "options": [
+        { "value": "container", "label": "Container (1320px)" },
+        { "value": "container-fluid", "label": "Fluid Container (1820px)" },
+        { "value": "narrow", "label": "Narrow Container (991px)" },
+        { "value": "full", "label": "Full Width (100%)" }
+      ],
+      "default": "container"
+    },
+    {
+      "type": "color",
+      "id": "section_bg",
+      "label": "Section Background",
+      "default": "#fafbfd"
+    },
+    {
+      "type": "color",
+      "id": "card_bg",
+      "label": "Card Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "card_border",
+      "label": "Card Border Color",
+      "default": "#eaedf1"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 8,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "label": "Card Corner Radius",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "star_color",
+      "label": "Star Rating Color",
+      "default": "#f59e0b"
+    },
+    {
+      "type": "header",
+      "content": "Slider Autoplay"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Enable Auto Slide",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "min": 2,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "label": "Autoplay Speed (seconds)",
+      "default": 4
+    },
+    {
+      "type": "header",
+      "content": "Section Spacing"
+    },
+    {
+      "type": "range",
+      "id": "margin_top",
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Top Spacing",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom",
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Bottom Spacing",
+      "default": 45
+    }
+  ],
+  "blocks": [
+    {
+      "type": "testimonial",
+      "name": "Review Item",
+      "settings": [
+        {
+          "type": "textarea",
+          "id": "review_text",
+          "label": "Review Text",
+          "default": "আমি একজন ঘরের বাজারের নিয়মিত কাস্টমার। প্রোডাক্টের কোয়ালিটি এবং ডেলিভারি সত্যিই অসাধারণ।"
+        },
+        {
+          "type": "range",
+          "id": "rating",
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "label": "Star Rating",
+          "default": 5
+        },
+        {
+          "type": "text",
+          "id": "author_name",
+          "label": "Customer Name",
+          "default": "Ahmod Al Kamran"
+        },
+        {
+          "type": "text",
+          "id": "author_role",
+          "label": "Customer Role / Designation",
+          "default": "Student"
+        },
+        {
+          "type": "image_picker",
+          "id": "author_image",
+          "label": "Author Avatar Image"
+        },
+        {
+          "type": "text",
+          "id": "author_image_url",
+          "label": "Fallback Avatar Image URL",
+          "info": "Optional direct image URL"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Customer Testimonials",
+      "blocks": [
+        {
+          "type": "testimonial",
+          "settings": {
+            "author_name": "Ahmod Al Kamran",
+            "author_role": "Student",
+            "review_text": "আমি একজন ঘরের বাজারের নিয়মিত কাস্টমার। আমি শুধু ঘরের বাজার থেকে এই যে প্রোডাক্ট আনি এমন নয়। আমি অনেক জায়গা থেকে এই প্রোডাক্ট এনেছি। তবে আমার মতে এসব পেজ থেকে ঘরের বাজার সেরা।",
+            "rating": 5,
+            "author_image_url": "https://backoffice.ghorerbazar.com/testimonial/NgeCj1758183204.jpg"
+          }
+        },
+        {
+          "type": "testimonial",
+          "settings": {
+            "author_name": "Shahriar Khan Abir",
+            "author_role": "Service Holder",
+            "review_text": "I don’t like ghee, but my father really loves it. So I bought some ghee for him. He said this ghee is the best he has ever had",
+            "rating": 5,
+            "author_image_url": "https://backoffice.ghorerbazar.com/testimonial/7XD7v1758183150.jpg"
+          }
+        },
+        {
+          "type": "testimonial",
+          "settings": {
+            "author_name": "Fariha Akter Tumpa",
+            "author_role": "Entrepreneur",
+            "review_text": "এই অবিশ্বাসের জগতে আস্থাশীল একটি প্রতিষ্ঠান ঘরের বাজার।",
+            "rating": 5,
+            "author_image_url": "https://backoffice.ghorerbazar.com/testimonial/PZDyt1758183005.jpg"
+          }
+        },
+        {
+          "type": "testimonial",
+          "settings": {
+            "author_name": "Ayesha Khan",
+            "author_role": "Banker",
+            "review_text": "২য় বার Ghorerbazar থেকে অর্ডার করলাম। আগের মতো এবারও দারুণ কোয়ালিটি আর দ্রুত ডেলিভারি পেয়েছি। একদম সন্তুষ্ট।",
+            "rating": 5,
+            "author_image_url": "https://backoffice.ghorerbazar.com/testimonial/0Jti61758182944.png"
+          }
+        },
+        {
+          "type": "testimonial",
+          "settings": {
+            "author_name": "Sultana Yesmin",
+            "author_role": "Housewife",
+            "review_text": "Thanks Ghorerbazar for free Honeyraj. Of course, I got it for being a regular customer.",
+            "rating": 5,
+            "author_image_url": "https://backoffice.ghorerbazar.com/testimonial/3qPit1758182893.jpg"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

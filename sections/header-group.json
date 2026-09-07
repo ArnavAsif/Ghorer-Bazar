@@ -1,0 +1,87 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "name": "t:sections.header.name",
+  "type": "header",
+  "sections": {
+    "announcement-bar": {
+      "type": "announcement-bar",
+      "blocks": {
+        "announcement-bar-0": {
+          "type": "announcement",
+          "settings": {
+            "text": "Welcome to our store",
+            "link": ""
+          }
+        }
+      },
+      "block_order": [
+        "announcement-bar-0"
+      ],
+      "disabled": true,
+      "settings": {
+        "auto_rotate": false,
+        "change_slides_speed": 5,
+        "color_scheme": "scheme-1",
+        "show_line_separator": true,
+        "show_social": false,
+        "enable_country_selector": false,
+        "enable_language_selector": false
+      }
+    },
+    "header": {
+      "type": "header",
+      "disabled": true,
+      "settings": {
+        "logo_position": "middle-left",
+        "mobile_logo_position": "center",
+        "menu": "main-menu",
+        "menu_type_desktop": "dropdown",
+        "sticky_header_type": "on-scroll-up",
+        "show_line_separator": true,
+        "color_scheme": "scheme-1",
+        "menu_color_scheme": "scheme-1",
+        "enable_country_selector": true,
+        "enable_language_selector": true,
+        "margin_bottom": 0,
+        "padding_top": 20,
+        "padding_bottom": 20
+      }
+    },
+    "custom_header_eJmF9b": {
+      "type": "custom-header",
+      "name": "Custom Header",
+      "settings": {
+        "logo_width": 160,
+        "menu": "main-menu",
+        "quick_links_menu": "",
+        "enable_sticky_desktop": true,
+        "search_placeholder": "Search in...",
+        "show_flash_sale": false,
+        "flash_sale_text": "Flash Sale",
+        "flash_sale_url": "",
+        "track_order_url": "",
+        "wishlist_url": "",
+        "phone_number": "+8809642922922",
+        "whatsapp_number": "+8801321208940",
+        "nav_bg_color": "#052724",
+        "nav_text_color": "#ffffff",
+        "accent_color": "#f37321",
+        "cart_rec_collection": "",
+        "cart_rec_title": "You May Also Like"
+      }
+    }
+  },
+  "order": [
+    "announcement-bar",
+    "header",
+    "custom_header_eJmF9b"
+  ]
+}

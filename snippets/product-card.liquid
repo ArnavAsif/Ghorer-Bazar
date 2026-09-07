@@ -1,0 +1,557 @@
+{% comment %}
+  =============================================================================
+  SELF-CONTAINED PRODUCT CARD SNIPPET (STANDALONE CSS + JS + LIVE AJAX CART)
+  - File: snippets/product-card.liquid
+  - Usage: {% render 'product-card', product: product, custom_badge: 'New Arrival' %}
+  - Completely isolated: Has its own scoped styles & event handlers
+  - Morphing Button: "Add To Cart" transforms into "[-] [qty] [+]" selector
+  - Live Cart Sync: Increases/decreases live in Shopify cart (/cart/change.js)
+  - Event Dispatch: Fires 'cart:updated' event for header and cart drawer sync
+  =============================================================================
+{% endcomment %}
+
+{% liquid
+  if product != blank
+    assign p_id = product.id
+    assign p_variant_id = product.selected_or_first_available_variant.id
+    assign p_title = product.title
+    assign p_url = product.url
+    assign p_price = product.price | money
+    assign p_compare_price = product.compare_at_price | money
+    assign p_img = product.featured_image
+    assign is_on_sale = false
+    if product.compare_at_price > product.price
+      assign is_on_sale = true
+    endif
+    assign has_new_tag = false
+    for tag in product.tags
+      assign down_tag = tag | downcase
+      if down_tag contains 'new'
+        assign has_new_tag = true
+        break
+      endif
+    endfor
+  else
+    # Fallback demo product
+    assign p_id = demo_id | default: 'demo-p-1'
+    assign p_variant_id = demo_variant_id | default: 'demo-v-1'
+    assign p_title = demo_title | default: 'Black Seed Honey 500g'
+    assign p_url = demo_url | default: '/collections/all'
+    assign p_price = demo_price | default: '৳800'
+    assign p_compare_price = demo_compare_price
+    assign p_img = demo_img | default: 'https://backoffice.ghorerbazar.com/category_images/KbWCe1774766391.png'
+    assign is_on_sale = false
+    assign has_new_tag = demo_is_new | default: false
+  endif
+
+  assign badge_label = custom_badge
+  if badge_label == blank and has_new_tag
+    assign badge_label = settings.badge_new_label | default: 'New Arrival'
+  endif
+%}
+
+<div class="gh-product-card js-gh-product-card" data-product-id="{{ p_id }}" data-variant-id="{{ p_variant_id }}">
+  
+  <!-- Top Badge (New Arrival / Sale) -->
+  {% if badge_label != blank %}
+    <span class="gh-pcard-badge">{{ badge_label }}</span>
+  {% elsif is_on_sale %}
+    <span class="gh-pcard-badge gh-pcard-badge-sale">Sale</span>
+  {% endif %}
+
+  <!-- Product Image Container with Hover Zoom -->
+  <a href="{{ p_url }}" class="gh-pcard-img-wrap">
+    {% if p_img.src %}
+      <img src="{{ p_img | image_url: width: 400 }}" alt="{{ p_title | escape }}" class="gh-pcard-img" loading="lazy">
+    {% else %}
+      <img src="{{ p_img }}" alt="{{ p_title | escape }}" class="gh-pcard-img" loading="lazy">
+    {% endif %}
+  </a>
+
+  <!-- Product Info -->
+  <div class="gh-pcard-details">
+    <a href="{{ p_url }}" class="gh-pcard-title" title="{{ p_title | escape }}">
+      {{ p_title }}
+    </a>
+
+    <div class="gh-pcard-price">
+      <span class="gh-pcard-price-current">{{ p_price }}</span>
+      {% if is_on_sale and p_compare_price != blank %}
+        <span class="gh-pcard-price-compare">{{ p_compare_price }}</span>
+      {% endif %}
+    </div>
+
+    <!-- Actions: Add to Cart & Morphing Quantity Box -->
+    <div class="gh-pcard-actions">
+      <!-- 1. Add To Cart Button -->
+      <button type="button" class="gh-pcard-btn-add js-pcard-add-btn" data-variant-id="{{ p_variant_id }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span>{{ settings.add_to_cart_text | default: 'Add To Cart' }}</span>
+      </button>
+
+      <!-- 2. Quantity Box (Morphs from Add To Cart) -->
+      <div class="gh-pcard-qty-box js-pcard-qty-box" data-variant-id="{{ p_variant_id }}">
+        <button type="button" class="gh-pcard-qty-btn js-pcard-qty-minus" aria-label="Decrease">&minus;</button>
+        <span class="gh-pcard-qty-val js-pcard-qty-val">1</span>
+        <button type="button" class="gh-pcard-qty-btn js-pcard-qty-plus" aria-label="Increase">&plus;</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% comment %}
+  =============================================================================
+  SELF-CONTAINED STYLES & SCRIPT
+  =============================================================================
+{% endcomment %}
+<style>
+  /* Standalone Product Card Styles */
+  .gh-product-card {
+    background: #ffffff;
+    border: 1px solid #edf0f3;
+    border-radius: 12px;
+    padding: 16px 14px 16px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .gh-product-card * {
+    box-sizing: border-box;
+  }
+
+  .gh-product-card:hover {
+    border-color: #e2e8f0;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+  }
+
+  /* Badge */
+  .gh-pcard-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: #f37321;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    z-index: 3;
+    line-height: 1.2;
+    box-shadow: 0 2px 5px rgba(243, 115, 33, 0.25);
+    pointer-events: none;
+  }
+
+  .gh-pcard-badge-sale {
+    background: #e53935;
+    box-shadow: 0 2px 5px rgba(229, 57, 53, 0.25);
+  }
+
+  /* Image Box */
+  .gh-pcard-img-wrap {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 12px;
+    text-decoration: none;
+    -webkit-user-drag: none;
+    position: relative;
+  }
+
+  .gh-pcard-img {
+    max-width: 85%;
+    max-height: 85%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
+  .gh-product-card:hover .gh-pcard-img {
+    transform: scale(1.07);
+  }
+
+  /* Info Details */
+  .gh-pcard-details {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    width: 100%;
+  }
+
+  .gh-pcard-title {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 6px 0;
+    text-decoration: none;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 38px;
+    word-break: break-word;
+    transition: color 0.2s ease;
+  }
+
+  .gh-pcard-title:hover {
+    color: #f37321;
+  }
+
+  .gh-pcard-price {
+    font-size: 16.5px;
+    font-weight: 700;
+    color: #f37321;
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .gh-pcard-price-compare {
+    font-size: 13px;
+    font-weight: 500;
+    color: #9ca3af;
+    text-decoration: line-through;
+  }
+
+  /* Actions */
+  .gh-pcard-actions {
+    width: 100%;
+    margin-top: auto;
+  }
+
+  .gh-pcard-btn-add {
+    width: 100%;
+    height: 38px;
+    background: #ffffff;
+    border: 1.5px solid #f37321;
+    color: #f37321;
+    font-size: 13.5px;
+    font-weight: 600;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, transform 0.15s;
+    outline: none;
+    white-space: nowrap;
+    padding: 0 10px;
+  }
+
+  .gh-pcard-btn-add:hover {
+    background: #fff8f3;
+  }
+
+  .gh-pcard-btn-add:active {
+    transform: scale(0.97);
+  }
+
+  .gh-pcard-btn-add svg {
+    width: 15px;
+    height: 15px;
+    stroke-width: 2.2;
+  }
+
+  /* Quantity Box */
+  .gh-pcard-qty-box {
+    display: none;
+    align-items: stretch;
+    border: 1.5px solid #f37321;
+    border-radius: 6px;
+    overflow: hidden;
+    height: 38px;
+    width: 100%;
+    background: #ffffff;
+  }
+
+  .gh-pcard-qty-box.is-active {
+    display: inline-flex;
+  }
+
+  .gh-pcard-qty-btn {
+    background: #f37321;
+    color: #ffffff;
+    border: none;
+    width: 36px;
+    font-size: 17px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    outline: none;
+    user-select: none;
+    padding: 0;
+  }
+
+  .gh-pcard-qty-btn:hover {
+    background: #e06110;
+  }
+
+  .gh-pcard-qty-btn:active {
+    background: #c9540b;
+  }
+
+  .gh-pcard-qty-val {
+    flex: 1;
+    text-align: center;
+    border: none;
+    outline: none;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #1f2937;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+
+  /* Responsive Card scaling */
+  @media (max-width: 640px) {
+    .gh-product-card {
+      padding: 12px 9px 12px;
+      border-radius: 10px;
+    }
+    .gh-pcard-badge {
+      top: 8px;
+      left: 8px;
+      font-size: 9px;
+      padding: 2px 6px;
+    }
+    .gh-pcard-img-wrap {
+      margin-bottom: 8px;
+    }
+    .gh-pcard-title {
+      font-size: 13px;
+      min-height: 34px;
+      margin-bottom: 4px;
+    }
+    .gh-pcard-price {
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+    .gh-pcard-btn-add,
+    .gh-pcard-qty-box {
+      height: 33px;
+      font-size: 12px;
+    }
+    .gh-pcard-qty-btn {
+      width: 32px;
+    }
+  }
+</style>
+
+<script>
+  if (!window._ghProductCardScriptLoaded) {
+    window._ghProductCardScriptLoaded = true;
+
+    // Helper: Show global loader modal if exists
+    function triggerCardLoader() {
+      const modal = document.getElementById('ghCartModalOverlay');
+      if (modal) {
+        modal.classList.add('is-visible');
+        setTimeout(() => modal.classList.remove('is-visible'), 400);
+      }
+    }
+
+    // Helper: Update Header badges
+    function updateCardHeaderBadge(count) {
+      document.querySelectorAll('.js-cart-badge-count').forEach(b => {
+        b.textContent = count;
+      });
+    }
+
+    // Initialize Card States with current cart
+    window.syncGhProductCardsWithCart = function() {
+      fetch('/cart.js')
+        .then(res => res.json())
+        .then(cart => {
+          if (cart && cart.item_count !== undefined) {
+            updateCardHeaderBadge(cart.item_count);
+          }
+          const itemsMap = {};
+          if (cart && cart.items) {
+            cart.items.forEach(item => {
+              itemsMap[item.variant_id] = item.quantity;
+            });
+          }
+
+          document.querySelectorAll('.js-gh-product-card').forEach(card => {
+            const variantId = card.dataset.variantId;
+            const addBtn = card.querySelector('.js-pcard-add-btn');
+            const qtyBox = card.querySelector('.js-pcard-qty-box');
+            const qtyVal = card.querySelector('.js-pcard-qty-val');
+
+            const currentQty = itemsMap[variantId] || 0;
+            if (currentQty > 0) {
+              if (addBtn) addBtn.style.display = 'none';
+              if (qtyBox) qtyBox.classList.add('is-active');
+              if (qtyVal) qtyVal.textContent = currentQty;
+            } else {
+              if (addBtn) addBtn.style.display = 'inline-flex';
+              if (qtyBox) qtyBox.classList.remove('is-active');
+              if (qtyVal) qtyVal.textContent = '1';
+            }
+          });
+        })
+        .catch(() => {});
+    };
+
+    // Attach Event Handlers (Idempotent)
+    window.initGhProductCards = function() {
+      document.querySelectorAll('.js-gh-product-card:not([data-initialized])').forEach(card => {
+        card.setAttribute('data-initialized', 'true');
+        const variantId = card.dataset.variantId;
+        const addBtn = card.querySelector('.js-pcard-add-btn');
+        const qtyBox = card.querySelector('.js-pcard-qty-box');
+        const qtyVal = card.querySelector('.js-pcard-qty-val');
+        const plusBtn = card.querySelector('.js-pcard-qty-plus');
+        const minusBtn = card.querySelector('.js-pcard-qty-minus');
+
+        // 1. ADD TO CART
+        if (addBtn) {
+          addBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            triggerCardLoader();
+
+            if (variantId && !variantId.startsWith('demo')) {
+              fetch('/cart/add.js', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: variantId, quantity: 1 })
+              })
+                .then(res => res.json())
+                .then(data => {
+                  addBtn.style.display = 'none';
+                  if (qtyBox) qtyBox.classList.add('is-active');
+                  if (qtyVal) qtyVal.textContent = '1';
+                  document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: 1 } }));
+                  fetch('/cart.js').then(r => r.json()).then(c => updateCardHeaderBadge(c.item_count));
+                  if (window.refreshGhorerCart) window.refreshGhorerCart(true);
+                })
+                .catch(() => {});
+            } else {
+              // Demo fallback
+              addBtn.style.display = 'none';
+              if (qtyBox) qtyBox.classList.add('is-active');
+              if (qtyVal) qtyVal.textContent = '1';
+              document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: 1 } }));
+              if (window.refreshGhorerCart) window.refreshGhorerCart(true);
+            }
+          });
+        }
+
+        // 2. PLUS (+)
+        if (plusBtn) {
+          plusBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            let cur = parseInt(qtyVal.textContent, 10) || 1;
+            const newQty = cur + 1;
+            triggerCardLoader();
+
+            if (variantId && !variantId.startsWith('demo')) {
+              fetch('/cart/change.js', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: variantId, quantity: newQty })
+              })
+                .then(res => res.json())
+                .then(cart => {
+                  qtyVal.textContent = newQty;
+                  updateCardHeaderBadge(cart.item_count);
+                  document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: newQty } }));
+                  if (window.refreshGhorerCart) window.refreshGhorerCart(false);
+                })
+                .catch(() => {});
+            } else {
+              qtyVal.textContent = newQty;
+              document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: newQty } }));
+              if (window.refreshGhorerCart) window.refreshGhorerCart(false);
+            }
+          });
+        }
+
+        // 3. MINUS (-)
+        if (minusBtn) {
+          minusBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            let cur = parseInt(qtyVal.textContent, 10) || 1;
+            const newQty = cur - 1;
+            triggerCardLoader();
+
+            if (variantId && !variantId.startsWith('demo')) {
+              fetch('/cart/change.js', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: variantId, quantity: newQty })
+              })
+                .then(res => res.json())
+                .then(cart => {
+                  if (newQty <= 0) {
+                    if (qtyBox) qtyBox.classList.remove('is-active');
+                    if (addBtn) addBtn.style.display = 'inline-flex';
+                    if (qtyVal) qtyVal.textContent = '1';
+                  } else {
+                    qtyVal.textContent = newQty;
+                  }
+                  updateCardHeaderBadge(cart.item_count);
+                  document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: newQty } }));
+                  if (window.refreshGhorerCart) window.refreshGhorerCart(false);
+                })
+                .catch(() => {});
+            } else {
+              if (newQty <= 0) {
+                if (qtyBox) qtyBox.classList.remove('is-active');
+                if (addBtn) addBtn.style.display = 'inline-flex';
+                if (qtyVal) qtyVal.textContent = '1';
+              } else {
+                qtyVal.textContent = newQty;
+              }
+              document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: newQty } }));
+            }
+          });
+        }
+      });
+    };
+
+    // Auto-init on load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        window.initGhProductCards();
+        window.syncGhProductCardsWithCart();
+      });
+    } else {
+      window.initGhProductCards();
+      window.syncGhProductCardsWithCart();
+    }
+  } else {
+    if (typeof window.initGhProductCards === 'function') {
+      window.initGhProductCards();
+    }
+  }
+</script>

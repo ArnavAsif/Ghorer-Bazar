@@ -1,0 +1,1973 @@
+{% comment %}
+  =============================================================================
+  SHOPIFY CUSTOM HEADER SECTION (Ghorer Bazar Style)
+  - Desktop (> 1000px): Middle Bar + Dark Category Nav Bar (ONLY NAVLINK IS STICKY)
+  - Tablet (800px - 1000px): Single Row: Hamburger | Logo | Search | Icons only
+  - Mobile (< 800px): Hamburger | Logo | Cart + Search
+  - Offcanvas Nav Drawer (Left)
+  - Offcanvas Cart Drawer (Right Sidebar):
+    * Opens on Cart click
+    * Empty State ("No items in your cart!")
+    * Filled State with item card, qty controller (- / +), calc (x price = total), remove (x)
+    * "You May Also Like" cross-sell slider with "+ Add" button
+    * Total price & Orange "CHECKOUT" button
+  =============================================================================
+{% endcomment %}
+
+{% liquid
+  assign main_menu = linklists[section.settings.menu]
+  assign quick_menu = linklists[section.settings.quick_links_menu]
+  assign nav_bg = section.settings.nav_bg_color | default: '#052724'
+  assign nav_text = section.settings.nav_text_color | default: '#ffffff'
+  assign accent_color = section.settings.accent_color | default: '#f37321'
+  assign rec_collection = collections[section.settings.cart_rec_collection]
+  if rec_collection == blank or rec_collection.products_count == 0
+    assign rec_collection = collections['all']
+  endif
+  if rec_collection == blank or rec_collection.products_count == 0
+    assign rec_collection = collections.first
+  endif
+%}
+
+<style>
+  :root {
+    --gh-nav-bg: {{ nav_bg }};
+    --gh-nav-text: {{ nav_text }};
+    --gh-accent: {{ accent_color }};
+    --gh-accent-hover: #e06010;
+    --gh-border-light: #ececec;
+    --gh-text-dark: #222529;
+    --gh-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .gh-custom-header {
+    font-family: var(--gh-font);
+    background: #ffffff;
+    width: 100%;
+    position: relative;
+    z-index: 999;
+    box-sizing: border-box;
+  }
+
+  .gh-custom-header *, .gh-custom-header *::before, .gh-custom-header *::after {
+    box-sizing: border-box;
+  }
+
+  .gh-container {
+    max-width: var(--container-max-width, 80%);
+    margin: 0 auto;
+    padding: 0 20px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  @media (max-width: 1600px) {
+    .gh-container {
+      max-width: 95%;
+    }
+  }
+  @media (max-width: 479px) {
+    .gh-container {
+      max-width: 100%;
+      padding: 0 12px;
+    }
+  }
+
+  /* TOP / MIDDLE BAR */
+  .gh-middle-bar {
+    padding: 14px 0;
+    background: #ffffff;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .gh-middle-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .gh-left-group {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .gh-tablet-hamburger {
+    display: none;
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    color: var(--gh-text-dark);
+  }
+
+  .gh-tablet-hamburger svg { width: 22px; height: 22px; }
+
+  .gh-logo-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  .gh-logo-img {
+    height: auto;
+    max-width: {{ section.settings.logo_width | default: 160 }}px;
+    max-height: 52px;
+    object-fit: contain;
+    display: block;
+  }
+
+  .gh-search-form {
+    flex: 1;
+    max-width: 580px;
+    position: relative;
+  }
+
+  .gh-search-input-wrap {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .gh-search-input {
+    width: 100%;
+    height: 42px;
+    background: #f3f4f6;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 0 45px 0 20px;
+    font-size: 14px;
+    color: var(--gh-text-dark);
+    outline: none;
+    transition: all 0.25s ease;
+  }
+
+  .gh-search-input:focus {
+    background: #ffffff;
+    border-color: #d1d5db;
+    box-shadow: 0 0 0 3px rgba(243, 115, 33, 0.12);
+  }
+
+  .gh-search-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #4b5563;
+    border-radius: 50%;
+  }
+
+  .gh-search-btn svg { width: 18px; height: 18px; }
+
+  .gh-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+
+  .gh-action-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--gh-text-dark);
+    position: relative;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 2px;
+    transition: color 0.2s ease;
+  }
+
+  .gh-action-link:hover { color: var(--gh-accent); }
+
+  .gh-icon-box {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+  }
+
+  .gh-icon-box svg { width: 22px; height: 22px; }
+
+  .gh-action-label {
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 3px;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+
+  .gh-badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    background: var(--gh-accent);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    line-height: 1;
+  }
+
+  /* MORE DROPDOWN */
+  .gh-more-wrap { position: relative; }
+  .gh-more-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 10px;
+    width: 220px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    border: 1px solid #f0f0f0;
+    padding: 10px 0;
+    display: none;
+    z-index: 1000;
+    animation: ghFadeDown 0.2s ease forwards;
+  }
+
+  .gh-more-wrap:hover .gh-more-dropdown,
+  .gh-more-wrap.is-open .gh-more-dropdown { display: block; }
+  .gh-more-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+    font-size: 13px;
+    color: var(--gh-text-dark);
+    text-decoration: none;
+  }
+  .gh-more-dropdown a:hover { background: #fdf5f0; color: var(--gh-accent); }
+  .gh-more-dropdown a svg { width: 16px; height: 16px; color: #888; }
+
+  /* NAVLINK BAR (Dark Green - STICKY ON DESKTOP > 1000px) */
+  .gh-nav-bar-wrapper { width: 100%; position: relative; }
+  .gh-nav-bar {
+    background-color: var(--gh-nav-bg);
+    width: 100%;
+    position: relative;
+    z-index: 50;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  }
+
+  .gh-nav-bar.is-nav-sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+    animation: ghNavSlideDown 0.25s ease forwards;
+  }
+
+  @keyframes ghNavSlideDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+  }
+
+  .gh-nav-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+  }
+
+  .gh-nav-menu {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+
+  .gh-nav-item { position: relative; }
+  .gh-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 14px 14px;
+    color: var(--gh-nav-text);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+  .gh-nav-link:hover { color: #ffb885; }
+  .gh-chevron-down { width: 9px; height: 9px; transition: transform 0.2s ease; }
+  .gh-nav-item:hover > .gh-nav-link .gh-chevron-down { transform: rotate(180deg); }
+
+  .gh-submenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #ffffff;
+    min-width: 210px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    border-radius: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+    display: none;
+    z-index: 100;
+    border: 1px solid #f0f0f0;
+    animation: ghFadeDown 0.2s ease forwards;
+  }
+
+  .gh-nav-item:hover > .gh-submenu { display: block; }
+  .gh-submenu-item a {
+    display: block;
+    padding: 9px 18px;
+    font-size: 13px;
+    color: #333;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+  .gh-submenu-item a:hover { background: #fdf5f0; color: var(--gh-accent); padding-left: 22px; }
+
+  .gh-flash-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.12);
+    padding: 6px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+    margin-left: 15px;
+    transition: background 0.2s ease;
+  }
+  .gh-flash-btn:hover { background: var(--gh-accent); }
+  .gh-flash-btn svg { width: 14px; height: 14px; color: #ffc107; }
+
+  /* MOBILE HEADER (< 800px) */
+  .gh-header-mobile {
+    display: none;
+    background: #ffffff;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eee;
+  }
+  .gh-mobile-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .gh-mobile-menu-btn {
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gh-text-dark);
+  }
+  .gh-mobile-menu-btn svg { width: 24px; height: 24px; }
+  .gh-mobile-cart-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--gh-text-dark);
+    position: relative;
+    padding: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+  .gh-mobile-cart-btn svg { width: 24px; height: 24px; }
+  .gh-mobile-search-bar { display: none; padding: 8px 16px 12px; background: #ffffff; }
+
+  /* OVERLAYS & DRAWERS */
+  .gh-drawer-overlay, .gh-cart-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 99998;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  .gh-drawer-overlay.is-active, .gh-cart-overlay.is-active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* LEFT NAV DRAWER */
+  .gh-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 320px;
+    max-width: 86vw;
+    height: 100%;
+    background: #ffffff;
+    z-index: 99999;
+    transform: translateX(-100%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .gh-drawer.is-active { transform: translateX(0); }
+  .gh-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .gh-drawer-title { font-size: 15px; font-weight: 700; color: var(--gh-text-dark); }
+  .gh-drawer-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #666; }
+  .gh-drawer-body { flex: 1; overflow-y: auto; padding: 16px; }
+
+  .gh-user-card {
+    background: linear-gradient(135deg, var(--gh-accent) 0%, #fa8c16 100%);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: #ffffff;
+    margin-bottom: 18px;
+    text-decoration: none;
+  }
+  .gh-user-avatar {
+    width: 44px;
+    height: 44px;
+    background: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gh-accent);
+  }
+  .gh-user-avatar svg { width: 24px; height: 24px; }
+  .gh-user-greeting { font-size: 15px; font-weight: 700; color: #ffffff; }
+  .gh-user-subtext { font-size: 13px; color: rgba(255, 255, 255, 0.9); }
+
+  .gh-drawer-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #ebecee;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .gh-drawer-menu { list-style: none; margin: 0; padding: 0; }
+  .gh-drawer-item { border-bottom: 1px solid #f0f1f3; }
+  .gh-drawer-link-row { display: flex; align-items: center; justify-content: space-between; }
+  .gh-drawer-link { display: block; flex: 1; padding: 13px 16px; font-size: 14px; color: #2b2f33; text-decoration: none; font-weight: 500; }
+  .gh-drawer-accordion-btn { background: none; border: none; padding: 13px 16px; cursor: pointer; color: #8c939d; }
+  .gh-drawer-accordion-btn.is-open { transform: rotate(90deg); color: var(--gh-accent); }
+  .gh-drawer-accordion-btn svg { width: 14px; height: 14px; }
+  .gh-drawer-submenu { list-style: none; margin: 0; padding: 4px 0 8px 14px; display: none; background: #f2f4f7; }
+  .gh-drawer-submenu.is-open { display: block; }
+  .gh-drawer-sub-link { display: block; padding: 9px 16px; font-size: 13px; color: #4b5563; text-decoration: none; }
+
+  .gh-quick-section { padding: 0 4px; }
+  .gh-quick-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 10px 0;
+    position: relative;
+    display: inline-block;
+    padding-bottom: 6px;
+  }
+  .gh-quick-title::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 32px;
+    height: 3px;
+    background: var(--gh-accent);
+    border-radius: 2px;
+  }
+  .gh-quick-menu { list-style: none; margin: 10px 0 0 0; padding: 0; }
+  .gh-quick-item a { display: flex; align-items: center; gap: 12px; padding: 10px 4px; font-size: 13.5px; color: #374151; text-decoration: none; }
+
+  /* ==========================================================================
+     RIGHT SHOPPING CART DRAWER (MATCHES SCREENSHOT_13.PNG EXACTLY)
+     ========================================================================== */
+  .gh-cart-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 390px;
+    max-width: 92vw;
+    height: 100%;
+    background: #ffffff;
+    z-index: 100000;
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: -4px 0 28px rgba(0, 0, 0, 0.14);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .gh-cart-drawer.is-active { transform: translateX(0); }
+
+  .gh-cart-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  .gh-cart-overlay.is-active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* 1. Header: SHOPPING CART | Close -> */
+  .gh-cart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f3f5;
+    background: #ffffff;
+    flex-shrink: 0;
+  }
+  .gh-cart-heading {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .gh-cart-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #334155;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    transition: color 0.2s;
+  }
+  .gh-cart-close:hover {
+    color: var(--gh-accent);
+  }
+  .gh-cart-close svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+  }
+
+  /* 2. Main Body: Vertical Flex Container */
+  .gh-cart-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: #ffffff;
+    min-height: 0;
+  }
+
+  /* Empty Cart View */
+  .gh-cart-empty-view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  .gh-cart-empty-illustration {
+    width: 130px;
+    height: 130px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .gh-cart-empty-illustration img { max-width: 100%; height: auto; }
+  .gh-cart-empty-text { font-size: 15px; font-weight: 600; color: #1e293b; margin: 0; }
+
+  /* Filled Cart Content Wrap */
+  .gh-cart-filled-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    height: 100%;
+  }
+
+  /* Filled Cart Items Wrap (Top Area - Scrollable) */
+  .gh-cart-items-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+    min-height: 0;
+  }
+  .gh-cart-items-wrap::-webkit-scrollbar {
+    width: 5px;
+  }
+  .gh-cart-items-wrap::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+
+  /* Item Card (Exact Match to Screenshot_13.png) */
+  .gh-cart-item-card {
+    background: #ffffff;
+    border: 1px solid #edf2f7;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    transition: border-color 0.2s;
+  }
+  .gh-cart-item-img-box {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    border: 1px solid #f1f3f7;
+    border-radius: 8px;
+    padding: 4px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .gh-cart-item-thumb {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .gh-cart-item-info {
+    flex: 1;
+    min-width: 0;
+    padding-right: 28px;
+  }
+  .gh-cart-item-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 6px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    line-height: 1.3;
+  }
+  .gh-cart-item-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* [- 1 +] Pill Quantity Selector */
+  .gh-cart-qty-box {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 5px;
+    background: #ffffff;
+    overflow: hidden;
+    height: 24px;
+    flex-shrink: 0;
+  }
+  .gh-cart-qty-btn {
+    background: none;
+    border: none;
+    width: 20px;
+    height: 100%;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.15s;
+  }
+  .gh-cart-qty-btn:hover {
+    background: #f1f5f9;
+  }
+  .gh-cart-qty-val {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+    color: #1e293b;
+    user-select: none;
+  }
+  .gh-cart-price-math {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+  }
+
+  /* Close / Remove ✕ on Right (Vertically Centered) */
+  .gh-cart-item-remove {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #64748b;
+    cursor: pointer;
+    line-height: 1;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+  }
+  .gh-cart-item-remove:hover {
+    color: #ef4444;
+  }
+
+  /* 3. Bottom Wrap: Recommendations + Total + Checkout (Pins to bottom) */
+  .gh-cart-bottom-wrap {
+    margin-top: auto;
+    flex-shrink: 0;
+    background: #ffffff;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  /* Recommendations Section ("You May Also Like") */
+  .gh-cart-rec-section {
+    padding: 14px 16px 10px;
+    background: #ffffff;
+  }
+  .gh-cart-rec-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .gh-cart-rec-title-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .gh-cart-rec-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    line-height: 1.2;
+  }
+  .gh-cart-rec-title-bar {
+    width: 42px;
+    height: 2.5px;
+    background: var(--gh-accent);
+    border-radius: 2px;
+    margin-top: 5px;
+  }
+  .gh-cart-rec-arrows {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .gh-rec-arrow {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.2s ease;
+  }
+  .gh-rec-arrow.prev {
+    background: #fcd9bd;
+    color: #ffffff;
+  }
+  .gh-rec-arrow.prev:hover {
+    background: #fbb07e;
+  }
+  .gh-rec-arrow.next {
+    background: #f37321;
+    color: #ffffff;
+  }
+  .gh-rec-arrow.next:hover {
+    background: #e06010;
+  }
+  .gh-rec-arrow svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2.5;
+  }
+
+  .gh-cart-rec-slider-wrap {
+    overflow-x: auto;
+    display: flex;
+    gap: 12px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    padding-bottom: 4px;
+  }
+  .gh-cart-rec-slider-wrap::-webkit-scrollbar { display: none; }
+
+  /* Recommendation Card (Matches Screenshot_13.png) */
+  .gh-cart-rec-card {
+    background: #ffffff;
+    border: 1px solid #edf2f7;
+    border-radius: 12px;
+    padding: 10px 12px;
+    min-width: 240px;
+    max-width: 240px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  }
+  .gh-rec-img-box {
+    width: 60px;
+    height: 60px;
+    min-width: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8fafc;
+    flex-shrink: 0;
+  }
+  .gh-rec-thumb {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .gh-rec-details {
+    flex: 1;
+    min-width: 0;
+  }
+  .gh-rec-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 3px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.3;
+  }
+  .gh-rec-price {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #64748b;
+    margin: 0 0 6px 0;
+  }
+  .gh-rec-add-btn {
+    background: var(--gh-accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s;
+  }
+  .gh-rec-add-btn:hover {
+    background: #e06010;
+  }
+
+  /* Cart Footer: Total Row + Checkout Button */
+  .gh-cart-footer {
+    padding: 10px 20px 20px;
+    background: #ffffff;
+  }
+  .gh-cart-total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .gh-cart-total-lbl {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+  .gh-cart-total-val {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+  .gh-cart-checkout-btn {
+    display: block;
+    width: 100%;
+    background: var(--gh-accent);
+    color: #ffffff;
+    text-align: center;
+    padding: 13px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.15s;
+    box-sizing: border-box;
+  }
+  .gh-cart-checkout-btn:hover {
+    background: #e06010;
+    color: #ffffff;
+  }
+
+  /* Responsive Cart Drawer */
+  @media (max-width: 479px) {
+    .gh-cart-drawer {
+      width: 100vw;
+      max-width: 100vw;
+    }
+    .gh-cart-rec-card {
+      min-width: 220px;
+      max-width: 220px;
+    }
+  }
+
+  /* Breakpoints: Desktop (> 991px), Tablet (768px - 991px), Mobile (<= 767px) */
+  @media (min-width: 768px) and (max-width: 991px) {
+    .gh-tablet-hamburger { display: inline-flex !important; }
+    .gh-action-label { display: none !important; }
+    .gh-actions { gap: 14px; }
+    .gh-nav-bar-wrapper { display: none !important; }
+    .gh-header-mobile, .gh-mobile-search-bar { display: none !important; }
+  }
+
+  @media (min-width: 992px) {
+    .gh-tablet-hamburger { display: none !important; }
+    .gh-action-label { display: block; }
+    .gh-nav-bar-wrapper { display: block !important; }
+    .gh-header-mobile, .gh-mobile-search-bar { display: none !important; }
+  }
+
+  @media (max-width: 767px) {
+    .gh-middle-bar, .gh-nav-bar-wrapper { display: none !important; }
+    .gh-header-mobile, .gh-mobile-search-bar { display: block !important; }
+  }
+</style>
+
+<div class="gh-custom-header" id="ghCustomHeader">
+
+  <!-- TOP / MIDDLE BAR -->
+  <div class="gh-middle-bar" id="ghMiddleBar">
+    <div class="container gh-container">
+      <div class="gh-middle-wrap">
+        
+        <div class="gh-left-group">
+          <button type="button" class="gh-tablet-hamburger js-gh-drawer-open" aria-label="Open Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="16" y2="12"></line>
+              <line x1="3" y1="18" x2="11" y2="18"></line>
+            </svg>
+          </button>
+
+          <a href="{{ routes.root_url }}" class="gh-logo-link">
+            {% if section.settings.logo != blank %}
+              <img 
+                src="{{ section.settings.logo | image_url: width: 400 }}" 
+                alt="{{ section.settings.logo.alt | default: shop.name }}" 
+                class="gh-logo-img"
+                width="{{ section.settings.logo_width | default: 160 }}"
+                loading="eager"
+              >
+            {% else %}
+              <img 
+                src="https://backoffice.ghorerbazar.com/company_logo/qJaKf1768887846.png" 
+                alt="{{ shop.name }}" 
+                class="gh-logo-img" 
+                width="{{ section.settings.logo_width | default: 160 }}"
+              >
+            {% endif %}
+          </a>
+        </div>
+
+        <form action="{{ routes.search_url }}" method="get" role="search" class="gh-search-form">
+          <div class="gh-search-input-wrap">
+            <input 
+              type="search" 
+              name="q" 
+              value="{{ search.terms | escape }}" 
+              placeholder="{{ section.settings.search_placeholder | default: 'Search in...' }}" 
+              class="gh-search-input" 
+              autocomplete="off"
+              required
+            >
+            <button type="submit" class="gh-search-btn" aria-label="Search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+          </div>
+        </form>
+
+        <div class="gh-actions">
+          <a href="{{ section.settings.track_order_url | default: '/pages/track-order' }}" class="gh-action-link" title="Track Order">
+            <span class="gh-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+            </span>
+            <span class="gh-action-label">Track Order</span>
+          </a>
+
+          <a href="{% if customer %}{{ routes.account_url }}{% else %}{{ routes.account_login_url }}{% endif %}" class="gh-action-link" title="Account">
+            <span class="gh-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </span>
+            <span class="gh-action-label">
+              {% if customer %}{{ customer.first_name | default: 'Account' | truncate: 12 }}{% else %}Sign In{% endif %}
+            </span>
+          </a>
+
+          <a href="{{ section.settings.wishlist_url | default: '/pages/wishlist' }}" class="gh-action-link" title="Wishlist">
+            <span class="gh-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </span>
+            <span class="gh-action-label">Wishlist</span>
+          </a>
+
+          <!-- Cart Button: CLICK OPENS CART DRAWER -->
+          <a href="{{ routes.cart_url }}" class="gh-action-link gh-cart-link js-gh-cart-open" title="Cart">
+            <span class="gh-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              <span class="gh-badge js-cart-badge-count">{{ cart.item_count }}</span>
+            </span>
+            <span class="gh-action-label">Cart</span>
+          </a>
+
+          <div class="gh-more-wrap">
+            <button type="button" class="gh-action-link gh-more-btn" title="More Menu" aria-haspopup="true">
+              <span class="gh-icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="12" x2="16" y2="12"></line>
+                  <line x1="3" y1="18" x2="11" y2="18"></line>
+                </svg>
+              </span>
+              <span class="gh-action-label">More</span>
+            </button>
+            <div class="gh-more-dropdown">
+              <a href="/pages/about-us">About Us</a>
+              <a href="{{ section.settings.wishlist_url | default: '/pages/wishlist' }}">Wishlists</a>
+              <a href="/pages/faq">FAQs</a>
+              {% if section.settings.phone_number != blank %}
+                <a href="tel:{{ section.settings.phone_number }}">Call Us</a>
+              {% endif %}
+              {% if section.settings.whatsapp_number != blank %}
+                <a href="https://wa.me/{{ section.settings.whatsapp_number | replace: '+', '' | replace: ' ', '' }}" target="_blank">WhatsApp</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP NAVLINK BAR (ONLY THIS IS STICKY ON DESKTOP > 1000px) -->
+  <div class="gh-nav-bar-wrapper" id="ghNavBarWrapper">
+    <div class="gh-nav-bar" id="ghNavBar">
+      <div class="container gh-container">
+        <div class="gh-nav-wrap">
+          <nav class="gh-desktop-nav" aria-label="Main Navigation">
+            <ul class="gh-nav-menu">
+              {% for link in main_menu.links %}
+                <li class="gh-nav-item">
+                  <a href="{{ link.url }}" class="gh-nav-link">
+                    {{ link.title }}
+                    {% if link.links != blank %}
+                      <svg class="gh-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    {% endif %}
+                  </a>
+                  {% if link.links != blank %}
+                    <ul class="gh-submenu">
+                      {% for child_link in link.links %}
+                        <li class="gh-submenu-item">
+                          <a href="{{ child_link.url }}">{{ child_link.title }}</a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </nav>
+
+          {% if section.settings.show_flash_sale and section.settings.flash_sale_text != blank %}
+            <a href="{{ section.settings.flash_sale_url | default: '/collections/all' }}" class="gh-flash-btn">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l2.4 6.9 7.1.6-5.4 4.7 1.6 7-5.7-3.6-5.7 3.6 1.6-7-5.4-4.7 7.1-.6L12 2z"/>
+              </svg>
+              {{ section.settings.flash_sale_text }}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE HEADER (< 800px) -->
+  <div class="gh-header-mobile">
+    <div class="gh-mobile-wrap">
+      <button type="button" class="gh-mobile-menu-btn js-gh-drawer-open" aria-label="Open Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="16" y2="12"></line>
+          <line x1="3" y1="18" x2="10" y2="18"></line>
+        </svg>
+      </button>
+
+      <a href="{{ routes.root_url }}" class="gh-logo-link">
+        {% if section.settings.logo != blank %}
+          <img src="{{ section.settings.logo | image_url: width: 300 }}" alt="{{ shop.name }}" class="gh-logo-img" style="max-height: 42px;">
+        {% else %}
+          <img src="https://backoffice.ghorerbazar.com/company_logo/qJaKf1768887846.png" alt="{{ shop.name }}" class="gh-logo-img" style="max-height: 42px;">
+        {% endif %}
+      </a>
+
+      <!-- Mobile Cart Button (CLICK OPENS CART DRAWER) -->
+      <a href="{{ routes.cart_url }}" class="gh-mobile-cart-btn js-gh-cart-open" aria-label="Cart">
+        <span class="gh-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+          <span class="gh-badge js-cart-badge-count">{{ cart.item_count }}</span>
+        </span>
+      </a>
+    </div>
+  </div>
+
+  <div class="gh-mobile-search-bar">
+    <form action="{{ routes.search_url }}" method="get" role="search" class="gh-search-form">
+      <div class="gh-search-input-wrap">
+        <input type="search" name="q" placeholder="{{ section.settings.search_placeholder | default: 'Search in...' }}" class="gh-search-input" style="height: 40px; font-size: 13px;" autocomplete="off" required>
+        <button type="submit" class="gh-search-btn" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- OFFCANVAS NAVIGATION DRAWER (LEFT) -->
+  <div class="gh-drawer-overlay" id="ghDrawerOverlay"></div>
+  <aside class="gh-drawer" id="ghDrawer" aria-label="Navigation Drawer">
+    <div class="gh-drawer-header">
+      <span class="gh-drawer-title">Navigation Menu</span>
+      <button type="button" class="gh-drawer-close" id="ghDrawerClose">&times;</button>
+    </div>
+    <div class="gh-drawer-body">
+      <a href="{% if customer %}{{ routes.account_url }}{% else %}{{ routes.account_login_url }}{% endif %}" class="gh-user-card">
+        <div class="gh-user-avatar">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+        </div>
+        <div class="gh-user-info">
+          <span class="gh-user-greeting">Hello there!</span>
+          <span class="gh-user-subtext">{% if customer %}My Account ({{ customer.first_name | default: 'Profile' }}){% else %}Signin{% endif %}</span>
+        </div>
+      </a>
+      <div class="gh-drawer-card">
+        <ul class="gh-drawer-menu">
+          {% for link in main_menu.links %}
+            <li class="gh-drawer-item">
+              <div class="gh-drawer-link-row">
+                <a href="{{ link.url }}" class="gh-drawer-link">{{ link.title }}</a>
+                {% if link.links != blank %}
+                  <button type="button" class="gh-drawer-accordion-btn js-drawer-acc-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  </button>
+                {% endif %}
+              </div>
+              {% if link.links != blank %}
+                <ul class="gh-drawer-submenu">
+                  {% for child_link in link.links %}
+                    <li><a href="{{ child_link.url }}" class="gh-drawer-sub-link">{{ child_link.title }}</a></li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="gh-quick-section">
+        <h3 class="gh-quick-title">Quick Links</h3>
+        <ul class="gh-quick-menu">
+          {% if quick_menu.links != blank %}
+            {% for qlink in quick_menu.links %}
+              <li class="gh-quick-item"><a href="{{ qlink.url }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>{{ qlink.title }}</a></li>
+            {% endfor %}
+          {% else %}
+            <li class="gh-quick-item"><a href="/pages/about-us">About Us</a></li>
+            <li class="gh-quick-item"><a href="{{ section.settings.wishlist_url | default: '/pages/wishlist' }}">Wishlists</a></li>
+            <li class="gh-quick-item"><a href="/pages/faq">FAQs</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ======================================================================
+       RIGHT SHOPPING CART DRAWER (MATCHES USER SCREENSHOTS 1 & 2)
+       ====================================================================== -->
+  <div class="gh-cart-overlay" id="ghCartOverlay"></div>
+
+  <aside class="gh-cart-drawer" id="ghCartDrawer" aria-label="Shopping Cart Drawer">
+    <!-- Header: SHOPPING CART | Close -> -->
+    <div class="gh-cart-header">
+      <span class="gh-cart-heading">SHOPPING CART</span>
+      <button type="button" class="gh-cart-close" id="ghCartCloseBtn" aria-label="Close Cart">
+        Close
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Drawer Body -->
+    <div class="gh-cart-body" id="ghCartBody">
+      
+      <!-- Empty Cart View (Screenshot 2) -->
+      <div class="gh-cart-empty-view" id="ghCartEmptyView" style="{% if cart.item_count > 0 %}display:none;{% else %}display:flex;{% endif %}">
+        <div class="gh-cart-empty-illustration">
+          <img src="https://ghorerbazar.com/assets/img/empty_cart.png" alt="Empty Cart" onerror="this.src='https://cdn.shopify.com/s/files/1/0533/2089/files/empty-cart.png?v=1';">
+        </div>
+        <p class="gh-cart-empty-text">No items in your cart!</p>
+      </div>
+
+      <!-- Filled Cart Content Wrap (Screenshot 1 & Screenshot 13) -->
+      <div class="gh-cart-filled-content" id="ghCartFilledContent" style="{% if cart.item_count == 0 %}display:none;{% else %}display:flex;{% endif %}">
+        
+        <!-- Cart Items List (Top Scrollable Area) -->
+        <div class="gh-cart-items-wrap" id="ghCartItemsList">
+          {% for item in cart.items %}
+            <div class="gh-cart-item-card" data-key="{{ item.key }}">
+              <div class="gh-cart-item-img-box">
+                <img src="{{ item.image | image_url: width: 140 }}" alt="{{ item.title | escape }}" class="gh-cart-item-thumb" loading="lazy">
+              </div>
+              <div class="gh-cart-item-info">
+                <span class="gh-cart-item-name" title="{{ item.title | escape }}">{{ item.title }}</span>
+                <div class="gh-cart-item-row">
+                  <div class="gh-cart-qty-box">
+                    <button type="button" class="gh-cart-qty-btn js-qty-dec" data-key="{{ item.key }}" aria-label="Decrease quantity">-</button>
+                    <span class="gh-cart-qty-val">{{ item.quantity }}</span>
+                    <button type="button" class="gh-cart-qty-btn js-qty-inc" data-key="{{ item.key }}" aria-label="Increase quantity">+</button>
+                  </div>
+                  <span class="gh-cart-price-math">&times; {{ item.price | money }} = {{ item.final_line_price | money }}</span>
+                </div>
+              </div>
+              <button type="button" class="gh-cart-item-remove js-item-remove" data-key="{{ item.key }}" aria-label="Remove Item">&times;</button>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Pinned Bottom Wrap: Recommendations + Total + Checkout -->
+        <div class="gh-cart-bottom-wrap">
+          <!-- "You May Also Like" Slider Section -->
+          <div class="gh-cart-rec-section">
+            <div class="gh-cart-rec-header">
+              <div class="gh-cart-rec-title-wrap">
+                <h4 class="gh-cart-rec-title">{{ section.settings.cart_rec_title | default: 'You May Also Like' }}</h4>
+                <div class="gh-cart-rec-title-bar"></div>
+              </div>
+              <div class="gh-cart-rec-arrows">
+                <button type="button" class="gh-rec-arrow prev" id="ghRecPrev" aria-label="Previous">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button type="button" class="gh-rec-arrow next" id="ghRecNext" aria-label="Next">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="gh-cart-rec-slider-wrap" id="ghRecSlider">
+              {% if rec_collection != blank and rec_collection.products.size > 0 %}
+                {% for prod in rec_collection.products limit: 10 %}
+                  {% assign first_variant = prod.selected_or_first_available_variant %}
+                  {% if first_variant.available %}
+                    <div class="gh-cart-rec-card">
+                      <div class="gh-rec-img-box">
+                        {% if prod.featured_image %}
+                          <img src="{{ prod.featured_image | image_url: width: 140 }}" alt="{{ prod.title | escape }}" class="gh-rec-thumb" loading="lazy">
+                        {% else %}
+                          <img src="https://backoffice.ghorerbazar.com/company_logo/qJaKf1768887846.png" alt="{{ prod.title | escape }}" class="gh-rec-thumb" loading="lazy">
+                        {% endif %}
+                      </div>
+                      <div class="gh-rec-details">
+                        <div class="gh-rec-name" title="{{ prod.title | escape }}">{{ prod.title }}</div>
+                        <div class="gh-rec-price">{{ prod.price | money }}</div>
+                        <button type="button" class="gh-rec-add-btn js-rec-add" data-variant-id="{{ first_variant.id }}" aria-label="Add {{ prod.title | escape }} to cart">
+                          + Add
+                        </button>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                <div class="gh-cart-rec-card">
+                  <div class="gh-rec-img-box">
+                    <img src="https://backoffice.ghorerbazar.com/company_logo/qJaKf1768887846.png" class="gh-rec-thumb" alt="Product">
+                  </div>
+                  <div class="gh-rec-details">
+                    <div class="gh-rec-name">Organic Jumbo Rolled Oats 500gm</div>
+                    <div class="gh-rec-price">৳700.00</div>
+                    <button type="button" class="gh-rec-add-btn js-rec-add" data-variant-id="">+ Add</button>
+                  </div>
+                </div>
+                <div class="gh-cart-rec-card">
+                  <div class="gh-rec-img-box">
+                    <img src="https://backoffice.ghorerbazar.com/company_logo/qJaKf1768887846.png" class="gh-rec-thumb" alt="Product">
+                  </div>
+                  <div class="gh-rec-details">
+                    <div class="gh-rec-name">Black Seed Honey 1kg</div>
+                    <div class="gh-rec-price">৳1,600.00</div>
+                    <button type="button" class="gh-rec-add-btn js-rec-add" data-variant-id="">+ Add</button>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Total + Checkout -->
+          <div class="gh-cart-footer">
+            <div class="gh-cart-total-row">
+              <span class="gh-cart-total-lbl">Total:</span>
+              <span class="gh-cart-total-val" id="ghCartTotalVal">{{ cart.total_price | money }}</span>
+            </div>
+            <a href="/checkout" class="gh-cart-checkout-btn">CHECKOUT</a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </aside>
+
+</div>
+
+<script>
+  (function() {
+    function initCustomHeader() {
+      const header = document.getElementById('ghCustomHeader');
+      const middleBar = document.getElementById('ghMiddleBar');
+      const navWrapper = document.getElementById('ghNavBarWrapper');
+      const navBar = document.getElementById('ghNavBar');
+      
+      const drawer = document.getElementById('ghDrawer');
+      const drawerOverlay = document.getElementById('ghDrawerOverlay');
+      const drawerCloseBtn = document.getElementById('ghDrawerClose');
+      const drawerOpenBtns = document.querySelectorAll('.js-gh-drawer-open');
+      const accordionBtns = document.querySelectorAll('.js-drawer-acc-btn');
+
+      const cartDrawer = document.getElementById('ghCartDrawer');
+      const cartOverlay = document.getElementById('ghCartOverlay');
+      const cartCloseBtn = document.getElementById('ghCartCloseBtn');
+      const cartOpenBtns = document.querySelectorAll('.js-gh-cart-open');
+      const cartEmptyView = document.getElementById('ghCartEmptyView');
+      const cartFilledContent = document.getElementById('ghCartFilledContent');
+      const cartItemsList = document.getElementById('ghCartItemsList');
+      const cartTotalVal = document.getElementById('ghCartTotalVal');
+      const badgeCounts = document.querySelectorAll('.js-cart-badge-count');
+
+      const recSlider = document.getElementById('ghRecSlider');
+      const recPrev = document.getElementById('ghRecPrev');
+      const recNext = document.getElementById('ghRecNext');
+
+      const moreWrap = document.querySelector('.gh-more-wrap');
+      const moreBtn = document.querySelector('.gh-more-btn');
+
+      if (!header) return;
+
+      /* Desktop Navlink Sticky Scroll (> 1000px only) */
+      if (navBar && navWrapper) {
+        let isSticky = false;
+        let ticking = false;
+
+        function updateNavSticky() {
+          const isDesktop = window.innerWidth > 1000;
+          if (!isDesktop) {
+            if (isSticky) {
+              navBar.classList.remove('is-nav-sticky');
+              navWrapper.style.height = '';
+              isSticky = false;
+            }
+            ticking = false;
+            return;
+          }
+
+          const triggerPoint = middleBar ? middleBar.offsetHeight : 80;
+          const currentScroll = window.scrollY || window.pageYOffset;
+
+          if (currentScroll > triggerPoint) {
+            if (!isSticky) {
+              navWrapper.style.height = navBar.offsetHeight + 'px';
+              navBar.classList.add('is-nav-sticky');
+              isSticky = true;
+            }
+          } else {
+            if (isSticky) {
+              navBar.classList.remove('is-nav-sticky');
+              navWrapper.style.height = '';
+              isSticky = false;
+            }
+          }
+          ticking = false;
+        }
+
+        window.addEventListener('scroll', function() {
+          if (!ticking) {
+            window.requestAnimationFrame(updateNavSticky);
+            ticking = true;
+          }
+        }, { passive: true });
+
+        window.addEventListener('resize', updateNavSticky);
+        updateNavSticky();
+      }
+
+      /* Desktop More Button Dropdown (Does NOT open drawer) */
+      if (moreBtn && moreWrap) {
+        moreBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          moreWrap.classList.toggle('is-open');
+        });
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('.gh-more-wrap')) {
+            moreWrap.classList.remove('is-open');
+          }
+        });
+      }
+
+      /* Left Nav Drawer */
+      function openNavDrawer() {
+        closeCartDrawer();
+        if (drawer && drawerOverlay) {
+          drawer.classList.add('is-active');
+          drawerOverlay.classList.add('is-active');
+          document.body.style.overflow = 'hidden';
+        }
+      }
+
+      function closeNavDrawer() {
+        if (drawer && drawerOverlay) {
+          drawer.classList.remove('is-active');
+          drawerOverlay.classList.remove('is-active');
+          if (!cartDrawer || !cartDrawer.classList.contains('is-active')) {
+            document.body.style.overflow = '';
+          }
+        }
+      }
+
+      drawerOpenBtns.forEach(btn => btn.addEventListener('click', e => {
+        e.preventDefault();
+        openNavDrawer();
+      }));
+      if (drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeNavDrawer);
+      if (drawerOverlay) drawerOverlay.addEventListener('click', closeNavDrawer);
+
+      /* Right Cart Drawer */
+      function openCartDrawer() {
+        closeNavDrawer();
+        if (cartDrawer && cartOverlay) {
+          cartDrawer.classList.add('is-active');
+          cartOverlay.classList.add('is-active');
+          document.body.style.overflow = 'hidden';
+          // Always refresh cart data live on opening
+          window.refreshGhorerCart(false);
+        }
+      }
+
+      function closeCartDrawer() {
+        if (cartDrawer && cartOverlay) {
+          cartDrawer.classList.remove('is-active');
+          cartOverlay.classList.remove('is-active');
+          if (!drawer || !drawer.classList.contains('is-active')) {
+            document.body.style.overflow = '';
+          }
+        }
+      }
+
+      cartOpenBtns.forEach(btn => btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        openCartDrawer();
+      }));
+      if (cartCloseBtn) cartCloseBtn.addEventListener('click', closeCartDrawer);
+      if (cartOverlay) cartOverlay.addEventListener('click', closeCartDrawer);
+
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+          closeNavDrawer();
+          closeCartDrawer();
+        }
+      });
+
+      /* Accordion */
+      accordionBtns.forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          const parentRow = btn.closest('.gh-drawer-item');
+          const submenu = parentRow ? parentRow.querySelector('.gh-drawer-submenu') : null;
+          if (submenu) {
+            const isOpen = submenu.classList.contains('is-open');
+            if (isOpen) {
+              submenu.classList.remove('is-open');
+              btn.classList.remove('is-open');
+            } else {
+              submenu.classList.add('is-open');
+              btn.classList.add('is-open');
+            }
+          }
+        });
+      });
+
+      /* Slider buttons for Recommended Products */
+      if (recPrev && recSlider) {
+        recPrev.addEventListener('click', function(e) {
+          e.preventDefault();
+          recSlider.scrollBy({ left: -250, behavior: 'smooth' });
+        });
+      }
+      if (recNext && recSlider) {
+        recNext.addEventListener('click', function(e) {
+          e.preventDefault();
+          recSlider.scrollBy({ left: 250, behavior: 'smooth' });
+        });
+      }
+
+      /* Helpers */
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function formatMoney(cents) {
+        if (isNaN(cents)) return '৳0.00';
+        const val = (cents / 100).toFixed(2);
+        const parts = val.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return '৳' + parts.join('.');
+      }
+
+      /* Cart UI Update */
+      function updateCartUI(cart) {
+        if (!cart) return;
+
+        // 1. Update badges
+        const count = cart.item_count !== undefined ? cart.item_count : 0;
+        document.querySelectorAll('.js-cart-badge-count').forEach(badge => {
+          badge.textContent = count;
+        });
+
+        // 2. Empty vs Filled view
+        if (count === 0 || !cart.items || cart.items.length === 0) {
+          if (cartEmptyView) cartEmptyView.style.display = 'flex';
+          if (cartFilledContent) cartFilledContent.style.display = 'none';
+          if (cartTotalVal) cartTotalVal.textContent = '৳0.00';
+          if (cartItemsList) cartItemsList.innerHTML = '';
+          return;
+        }
+
+        if (cartEmptyView) cartEmptyView.style.display = 'none';
+        if (cartFilledContent) cartFilledContent.style.display = 'flex';
+
+        // 3. Update total
+        if (cartTotalVal) {
+          cartTotalVal.textContent = formatMoney(cart.total_price);
+        }
+
+        // 4. Update items list (Matches Screenshot_13.png)
+        if (cartItemsList) {
+          let html = '';
+          cart.items.forEach(item => {
+            const imgUrl = (item.featured_image && item.featured_image.url) ? item.featured_image.url : (item.image || 'https://ghorerbazar.com/assets/img/empty_cart.png');
+            const itemTitle = item.title || item.product_title || '';
+            const unitPrice = formatMoney(item.final_price !== undefined ? item.final_price : item.price);
+            const linePrice = formatMoney(item.final_line_price !== undefined ? item.final_line_price : item.line_price);
+
+            html += `
+              <div class="gh-cart-item-card" data-key="${item.key}">
+                <div class="gh-cart-item-img-box">
+                  <img src="${imgUrl}" alt="${escapeHtml(itemTitle)}" class="gh-cart-item-thumb" loading="lazy">
+                </div>
+                <div class="gh-cart-item-info">
+                  <span class="gh-cart-item-name" title="${escapeHtml(itemTitle)}">${escapeHtml(itemTitle)}</span>
+                  <div class="gh-cart-item-row">
+                    <div class="gh-cart-qty-box">
+                      <button type="button" class="gh-cart-qty-btn js-qty-dec" data-key="${item.key}" aria-label="Decrease quantity">-</button>
+                      <span class="gh-cart-qty-val">${item.quantity}</span>
+                      <button type="button" class="gh-cart-qty-btn js-qty-inc" data-key="${item.key}" aria-label="Increase quantity">+</button>
+                    </div>
+                    <span class="gh-cart-price-math">&times; ${unitPrice} = ${linePrice}</span>
+                  </div>
+                </div>
+                <button type="button" class="gh-cart-item-remove js-item-remove" data-key="${item.key}" aria-label="Remove Item">&times;</button>
+              </div>
+            `;
+          });
+          cartItemsList.innerHTML = html;
+        }
+      }
+
+      /* Global Live Cart Refresh */
+      window.refreshGhorerCart = function(openDrawer = false) {
+        return fetch('/cart.js')
+          .then(res => res.json())
+          .then(cart => {
+            updateCartUI(cart);
+            if (openDrawer) {
+              openCartDrawer();
+            }
+            return cart;
+          })
+          .catch(err => {
+            console.error('Error fetching cart:', err);
+          });
+      };
+
+      /* Change Cart Item Quantity / Remove */
+      function changeCartItem(key, quantity) {
+        fetch('/cart/change.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ id: key, quantity: quantity })
+        })
+        .then(res => res.json())
+        .then(cart => {
+          updateCartUI(cart);
+          document.dispatchEvent(new CustomEvent('cart:updated', { detail: { key, quantity } }));
+        })
+        .catch(err => console.error('Error updating cart item:', err));
+      }
+
+      /* Cart Item Quantity Increment / Decrement / Remove Event Delegation */
+      document.addEventListener('click', function(e) {
+        const decBtn = e.target.closest('.js-qty-dec');
+        const incBtn = e.target.closest('.js-qty-inc');
+        const removeBtn = e.target.closest('.js-item-remove');
+
+        if (decBtn) {
+          e.preventDefault();
+          const key = decBtn.dataset.key;
+          const card = decBtn.closest('.gh-cart-item-card');
+          const qtyVal = card ? card.querySelector('.gh-cart-qty-val') : null;
+          const currentQty = qtyVal ? (parseInt(qtyVal.textContent, 10) || 1) : 1;
+          changeCartItem(key, Math.max(0, currentQty - 1));
+        } else if (incBtn) {
+          e.preventDefault();
+          const key = incBtn.dataset.key;
+          const card = incBtn.closest('.gh-cart-item-card');
+          const qtyVal = card ? card.querySelector('.gh-cart-qty-val') : null;
+          const currentQty = qtyVal ? (parseInt(qtyVal.textContent, 10) || 1) : 1;
+          changeCartItem(key, currentQty + 1);
+        } else if (removeBtn) {
+          e.preventDefault();
+          const key = removeBtn.dataset.key;
+          changeCartItem(key, 0);
+        }
+      });
+
+      /* "+ Add" Button Click for Recommended Products */
+      document.addEventListener('click', function(e) {
+        const recAddBtn = e.target.closest('.js-rec-add');
+        if (!recAddBtn) return;
+        e.preventDefault();
+        const variantId = recAddBtn.dataset.variantId;
+        if (!variantId || variantId.startsWith('demo')) {
+          const origText = recAddBtn.innerHTML;
+          recAddBtn.textContent = 'Added ✓';
+          setTimeout(() => { recAddBtn.innerHTML = origText; }, 1200);
+          return;
+        }
+
+        const origText = recAddBtn.innerHTML;
+        recAddBtn.textContent = '...';
+        recAddBtn.disabled = true;
+
+        fetch('/cart/add.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ id: variantId, quantity: 1 })
+        })
+        .then(res => res.json())
+        .then(() => {
+          recAddBtn.textContent = 'Added ✓';
+          setTimeout(() => {
+            recAddBtn.innerHTML = origText;
+            recAddBtn.disabled = false;
+          }, 1200);
+          return window.refreshGhorerCart(true);
+        })
+        .then(() => {
+          document.dispatchEvent(new CustomEvent('cart:updated', { detail: { variantId, quantity: 1 } }));
+        })
+        .catch(err => {
+          console.error('Error adding recommended product to cart:', err);
+          recAddBtn.innerHTML = origText;
+          recAddBtn.disabled = false;
+        });
+      });
+
+      /* Listen to global cart:updated events */
+      document.addEventListener('cart:updated', function() {
+        if (window.refreshGhorerCart) {
+          window.refreshGhorerCart(false);
+        }
+      });
+
+      /* Global Fetch Interceptor to catch any /cart/ mutations across the whole store */
+      if (!window._ghCartFetchIntercepted) {
+        window._ghCartFetchIntercepted = true;
+        const origFetch = window.fetch;
+        window.fetch = function(...args) {
+          const url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url ? args[0].url : '');
+          const promise = origFetch.apply(this, args);
+          if (typeof url === 'string' && (url.includes('/cart/add') || url.includes('/cart/change') || url.includes('/cart/clear'))) {
+            promise.then(res => {
+              if (res.ok && window.refreshGhorerCart) {
+                setTimeout(() => { window.refreshGhorerCart(false); }, 150);
+              }
+            }).catch(() => {});
+          }
+          return promise;
+        };
+      }
+
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initCustomHeader);
+    } else {
+      initCustomHeader();
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Custom Header",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Logo Settings"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Store Logo"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "min": 80,
+      "max": 260,
+      "step": 5,
+      "unit": "px",
+      "label": "Logo Width (Desktop)",
+      "default": 160
+    },
+    {
+      "type": "header",
+      "content": "Navigation Menus"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Main Navigation Menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "link_list",
+      "id": "quick_links_menu",
+      "label": "Quick Links Menu (Drawer)"
+    },
+    {
+      "type": "header",
+      "content": "Search Settings"
+    },
+    {
+      "type": "text",
+      "id": "search_placeholder",
+      "label": "Search Placeholder Text",
+      "default": "Search in..."
+    },
+    {
+      "type": "header",
+      "content": "Flash Sale Button"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_flash_sale",
+      "label": "Show Flash Sale Button",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "flash_sale_text",
+      "label": "Flash Sale Text",
+      "default": "Flash Sale"
+    },
+    {
+      "type": "url",
+      "id": "flash_sale_url",
+      "label": "Flash Sale Link"
+    },
+    {
+      "type": "header",
+      "content": "Cart Drawer Settings"
+    },
+    {
+      "type": "collection",
+      "id": "cart_rec_collection",
+      "label": "Cart Drawer Recommendations Collection"
+    },
+    {
+      "type": "text",
+      "id": "cart_rec_title",
+      "label": "Recommendations Heading",
+      "default": "You May Also Like"
+    },
+    {
+      "type": "header",
+      "content": "Contact & Links"
+    },
+    {
+      "type": "url",
+      "id": "track_order_url",
+      "label": "Track Order Link"
+    },
+    {
+      "type": "url",
+      "id": "wishlist_url",
+      "label": "Wishlist Link"
+    },
+    {
+      "type": "text",
+      "id": "phone_number",
+      "label": "Phone Number",
+      "default": "+8809642922922"
+    },
+    {
+      "type": "text",
+      "id": "whatsapp_number",
+      "label": "WhatsApp Number",
+      "default": "+8801321208940"
+    },
+    {
+      "type": "header",
+      "content": "Color Scheme"
+    },
+    {
+      "type": "color",
+      "id": "nav_bg_color",
+      "label": "Navigation Bar Background",
+      "default": "#052724"
+    },
+    {
+      "type": "color",
+      "id": "nav_text_color",
+      "label": "Navigation Bar Text Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent Color",
+      "default": "#f37321"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Header"
+    }
+  ]
+}
+{% endschema %}

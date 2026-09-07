@@ -1,0 +1,69 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "name": "t:sections.footer.name",
+  "type": "footer",
+  "sections": {
+    "custom_footer_bEBYWi": {
+      "type": "custom-footer",
+      "name": "Custom Footer",
+      "settings": {
+        "about_text": "Ghorer Bazar is an e-commerce platform dedicated to providing safe and reliable food to every home.",
+        "address": "Rampura, Dhaka, Bangladesh",
+        "phone": "+8809642922922",
+        "email": "contact@ghorerbazar.com",
+        "facebook_url": "",
+        "twitter_url": "",
+        "instagram_url": "",
+        "app_title": "Download App on Mobile :",
+        "google_play_url": "",
+        "app_store_url": "",
+        "menu_1_title": "Information",
+        "menu_1": "",
+        "menu_2_title": "Shop By",
+        "menu_2": "",
+        "menu_3_title": "Support",
+        "menu_3": "",
+        "menu_4_title": "Consumer Policy",
+        "menu_4": "",
+        "copyright_text": "Copyright © 2026 GhorerBazar",
+        "pay_label": "",
+        "payment_banner": "shopify://shop_images/faysy1756641916.png",
+        "bg_color": "#ffffff",
+        "heading_color": "#1f2937",
+        "text_color": "#4b5563",
+        "accent_color": "#f37321",
+        "container_max_width": 95
+      }
+    },
+    "footer": {
+      "type": "footer",
+      "disabled": true,
+      "settings": {
+        "color_scheme": "scheme-1",
+        "newsletter_enable": true,
+        "newsletter_heading": "Subscribe to our emails",
+        "enable_follow_on_shop": true,
+        "show_social": true,
+        "enable_country_selector": true,
+        "enable_language_selector": true,
+        "payment_enable": true,
+        "show_policy": true,
+        "margin_top": 0,
+        "padding_top": 36,
+        "padding_bottom": 36
+      }
+    }
+  },
+  "order": [
+    "custom_footer_bEBYWi",
+    "footer"
+  ]
+}

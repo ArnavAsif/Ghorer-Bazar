@@ -1,0 +1,161 @@
+/* =============================================================================
+   CUSTOM CONTAINER & RESPONSIVE BREAKPOINT SYSTEM
+   Strict adherence to original styles.css (lines 26373-26404):
+   1. Containers:
+      - .container: max-width: 80% (> 1600px), max-width: 95% (<= 1600px), max-width: 100% (<= 479px)
+      - .container-fluid: max-width: 1820px
+      - .container-narrow: max-width: 991px
+      - Padding: 0 20px desktop, 0 12px on mobile (<= 479px) for .container (15px for .container-fluid)
+   2. Breakpoints:
+      - Large desktop: 1199px and below
+      - Desktop/Laptop: 991px and below
+      - Tablet: 767px and below
+      - Large mobile: 575px and below
+      - Small mobile: 479px and below
+      - Extra small mobile: 375px and below
+   ============================================================================= */
+
+:root {
+  --container-max-width: 80%;
+  --container-fluid-max-width: 1820px;
+  --container-narrow-max-width: 991px;
+  --container-gutter: 20px;
+  --container-gutter-mobile: 12px;
+}
+
+@media (max-width: 1600px) {
+  :root {
+    --container-max-width: 95%;
+  }
+}
+
+@media (max-width: 479px) {
+  :root {
+    --container-max-width: 100%;
+    --container-gutter-mobile: 12px;
+  }
+}
+
+/* 1. CONTAINER CLASSES (Matching original styles.css lines 26373-26404) */
+.container,
+.container-fluid,
+.container-narrow {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--container-gutter);
+  padding-right: var(--container-gutter);
+  box-sizing: border-box;
+}
+
+.container {
+  max-width: 80%;
+}
+
+@media (max-width: 1600px) {
+  .container {
+    max-width: 95%;
+  }
+}
+
+.container-fluid {
+  max-width: 1820px;
+}
+
+.container-narrow {
+  max-width: 991px;
+}
+
+.container-full {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Mobile padding reduction (<= 479px) matching original styles.css */
+@media (max-width: 479px) {
+  .container {
+    max-width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .container-fluid {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  .container-narrow {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+/* 2. UNIVERSAL MEDIA RULES (Rule 6: Never overflow parent container) */
+.container img,
+.container-fluid img,
+.container-narrow img,
+[class*="-container"] img {
+  max-width: 100%;
+}
+
+/* 3. RESPONSIVE GRID / COLUMN SYSTEM */
+.gh-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -10px;
+  margin-right: -10px;
+}
+
+.gh-col-12, .gh-col-6, .gh-col-4, .gh-col-3, .gh-col-2-4, .gh-col-2 {
+  position: relative;
+  width: 100%;
+  padding-left: 10px;
+  padding-right: 10px;
+  box-sizing: border-box;
+}
+
+/* Desktop Defaults (> 991px) */
+.gh-col-12 { flex: 0 0 100%; max-width: 100%; }
+.gh-col-6  { flex: 0 0 50%; max-width: 50%; }
+.gh-col-4  { flex: 0 0 33.333333%; max-width: 33.333333%; }
+.gh-col-3  { flex: 0 0 25%; max-width: 25%; }
+.gh-col-2-4 { flex: 0 0 20%; max-width: 20%; }
+.gh-col-2  { flex: 0 0 16.666667%; max-width: 16.666667%; }
+
+/* Breakpoint 1: Large desktop (1199px and below) */
+@media (max-width: 1199px) {
+  .gh-col-lg-12 { flex: 0 0 100%; max-width: 100%; }
+  .gh-col-lg-6  { flex: 0 0 50%; max-width: 50%; }
+  .gh-col-lg-4  { flex: 0 0 33.333333%; max-width: 33.333333%; }
+  .gh-col-lg-3  { flex: 0 0 25%; max-width: 25%; }
+  .gh-col-lg-2  { flex: 0 0 16.666667%; max-width: 16.666667%; }
+}
+
+/* Breakpoint 2: Desktop / Laptop (991px and below) */
+@media (max-width: 991px) {
+  .gh-col-md-12 { flex: 0 0 100%; max-width: 100%; }
+  .gh-col-md-6  { flex: 0 0 50%; max-width: 50%; }
+  .gh-col-md-4  { flex: 0 0 33.333333%; max-width: 33.333333%; }
+  .gh-col-md-3  { flex: 0 0 25%; max-width: 25%; }
+}
+
+/* Breakpoint 3: Tablet (767px and below) */
+@media (max-width: 767px) {
+  .gh-col-sm-12 { flex: 0 0 100%; max-width: 100%; }
+  .gh-col-sm-6  { flex: 0 0 50%; max-width: 50%; }
+  .gh-col-sm-4  { flex: 0 0 33.333333%; max-width: 33.333333%; }
+}
+
+/* Breakpoint 4: Large mobile (575px and below) */
+@media (max-width: 575px) {
+  .gh-col-xs-12 { flex: 0 0 100%; max-width: 100%; }
+  .gh-col-xs-6  { flex: 0 0 50%; max-width: 50%; }
+}
+
+/* Breakpoint 5: Small mobile (479px and below) */
+@media (max-width: 479px) {
+  .gh-col-xxs-12 { flex: 0 0 100%; max-width: 100%; }
+}
+
+/* Breakpoint 6: Extra small mobile (375px and below) */
+@media (max-width: 375px) {
+  .gh-col-min-12 { flex: 0 0 100%; max-width: 100%; }
+}

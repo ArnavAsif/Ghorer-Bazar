@@ -1,0 +1,597 @@
+{% comment %}
+  =============================================================================
+  SHOPIFY JUST FOR YOU SECTION WITH LOAD MORE
+  - File: sections/custom-just-for-you.liquid
+  - Product Grid: Desktop: 4 columns, Tablet: 3 columns, Mobile: 2 columns
+  - Initial Display: 8 products at a time
+  - Load More: Shows +8 more products on click with smooth animation
+  - Dynamic: 100% dynamic from selected collection (No static products)
+  - Product Card: Rendered via snippets/product-card.liquid
+  - Header: "Just For You" with orange underline + "VIEW ALL PRODUCTS →" link
+  =============================================================================
+{% endcomment %}
+
+{% liquid
+  # 1. Resolve collection
+  assign selected_collection = section.settings.collection
+  if selected_collection == blank and collection != blank
+    assign selected_collection = collection
+  endif
+
+  if selected_collection != blank and selected_collection.products == blank
+    assign selected_collection = collections[selected_collection]
+  endif
+
+  assign title = section.settings.title | default: 'Just For You'
+  assign show_view_all = section.settings.show_view_all
+  assign view_all_text = section.settings.view_all_text | default: 'VIEW ALL PRODUCTS'
+  assign view_all_url = section.settings.view_all_url
+  if view_all_url == blank and selected_collection != blank
+    assign view_all_url = selected_collection.url
+  endif
+  if view_all_url == blank
+    assign view_all_url = '/collections/all'
+  endif
+
+  assign initial_count = section.settings.initial_count | default: 8
+  assign load_more_step = section.settings.load_more_step | default: 8
+  assign max_total_products = section.settings.max_total_products | default: 48
+  assign section_width_setting = section.settings.section_width | default: 'container'
+  case section_width_setting
+    when 'container-fluid'
+      assign section_max_w = '1820px'
+    when 'narrow'
+      assign section_max_w = '991px'
+    when 'full'
+      assign section_max_w = '100%'
+    else
+      assign section_max_w = 'var(--container-max-width, 80%)'
+  endcase
+%}
+
+<style>
+  #shopify-section-{{ section.id }} {
+    --section-max-width: {{ section_max_w }};
+  }
+  {% if section_width_setting == 'container' or section_width_setting == blank %}
+    @media (max-width: 1600px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 95%;
+      }
+    }
+    @media (max-width: 479px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 100%;
+      }
+    }
+  {% endif %}
+
+  #shopify-section-{{ section.id }} .gh-jfy-section {
+    width: 100%;
+    padding-top: {{ section.settings.margin_top | default: 35 }}px;
+    padding-bottom: {{ section.settings.margin_bottom | default: 45 }}px;
+    background-color: {{ section.settings.section_bg | default: '#ffffff' }};
+    box-sizing: border-box;
+  }
+
+  #shopify-section-{{ section.id }} * {
+    box-sizing: border-box;
+  }
+
+  .gh-jfy-container-{{ section.id }} {
+    width: 100%;
+    max-width: var(--section-max-width);
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+
+  /* --------------------------------------------------------------------------
+     1. SECTION HEADER: TITLE + ORANGE LINE + VIEW ALL LINK
+     -------------------------------------------------------------------------- */
+  .gh-jfy-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #edf0f3;
+    padding-bottom: 14px;
+    margin-bottom: 25px;
+    position: relative;
+  }
+
+  .gh-jfy-title-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding-bottom: 14px;
+    margin-bottom: -15px; /* Aligns orange bar with bottom border */
+  }
+
+  .gh-jfy-title {
+    font-size: {{ section.settings.heading_size | default: 22 }}px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.2px;
+  }
+
+  .gh-jfy-title-wrap::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+    background: #f37321;
+    border-radius: 2px 2px 0 0;
+  }
+
+  .gh-jfy-viewall {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #f37321;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: color 0.2s ease;
+  }
+
+  .gh-jfy-viewall:hover {
+    color: #d95d0e;
+  }
+
+  .gh-jfy-viewall svg {
+    width: 15px;
+    height: 15px;
+    stroke-width: 2.2;
+    transition: transform 0.2s ease;
+  }
+
+  .gh-jfy-viewall:hover svg {
+    transform: translateX(3px);
+  }
+
+  /* --------------------------------------------------------------------------
+     2. RESPONSIVE PRODUCT GRID: 4 DESKTOP, 3 TABLET, 2 MOBILE
+     -------------------------------------------------------------------------- */
+  .gh-jfy-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Desktop: 4 Columns */
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .gh-jfy-item {
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    display: flex;
+  }
+
+  .gh-jfy-item > * {
+    width: 100%;
+  }
+
+  .gh-jfy-hidden {
+    display: none !important;
+  }
+
+  .gh-jfy-fadein {
+    animation: ghJfyFadeIn 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+
+  @keyframes ghJfyFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+     3. LOAD MORE BUTTON (Pill Shape with Orange Outline)
+     -------------------------------------------------------------------------- */
+  .gh-jfy-loadmore-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+  }
+
+  .gh-jfy-loadmore-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 150px;
+    padding: 10px 36px;
+    background: #ffffff;
+    border: 1.5px solid #f37321;
+    color: #f37321;
+    border-radius: 25px;
+    font-size: 13.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(243, 115, 33, 0.08);
+  }
+
+  .gh-jfy-loadmore-btn:hover {
+    background: #f37321;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(243, 115, 33, 0.22);
+    transform: translateY(-1px);
+  }
+
+  .gh-jfy-loadmore-btn:active {
+    transform: translateY(0);
+  }
+
+  .gh-jfy-spinner {
+    width: 15px;
+    height: 15px;
+    border: 2px solid rgba(243, 115, 33, 0.3);
+    border-top-color: #f37321;
+    border-radius: 50%;
+    animation: ghJfySpin 0.6s linear infinite;
+  }
+
+  .gh-jfy-loadmore-btn:hover .gh-jfy-spinner {
+    border-color: rgba(255, 255, 255, 0.4);
+    border-top-color: #ffffff;
+  }
+
+  @keyframes ghJfySpin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Empty State */
+  .gh-jfy-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    background: #fafbfd;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    margin: 20px 0;
+  }
+
+  .gh-jfy-empty-state p {
+    font-size: 15px;
+    color: #64748b;
+    margin: 0;
+  }
+
+  /* --------------------------------------------------------------------------
+     RESPONSIVE BREAKPOINTS (Desktop/Laptop: 991px, Tablet: 767px, Mobile: 575px, 479px, 375px)
+     -------------------------------------------------------------------------- */
+  @media (max-width: 991px) {
+    .gh-jfy-grid {
+      grid-template-columns: repeat(3, 1fr); /* Tablet: 3 Columns */
+      gap: 16px;
+    }
+  }
+
+  /* Tablet / Large mobile (<= 767px) */
+  @media (max-width: 767px) {
+    .gh-jfy-header {
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+    .gh-jfy-title {
+      font-size: 1.8rem;
+    }
+    .gh-jfy-title-wrap {
+      padding-bottom: 12px;
+      margin-bottom: -13px;
+    }
+    .gh-jfy-viewall {
+      font-size: 1.15rem;
+    }
+    .gh-jfy-grid {
+      grid-template-columns: repeat(2, 1fr); /* Mobile: 2 Columns */
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .gh-jfy-loadmore-btn {
+      padding: 9px 28px;
+      font-size: 1.25rem;
+    }
+  }
+
+  /* Large mobile (<= 575px) */
+  @media (max-width: 575px) {
+    .gh-jfy-grid {
+      gap: 10px;
+    }
+  }
+
+  /* Small mobile (<= 479px): container padding reduces to 12px */
+  @media (max-width: 479px) {
+    .gh-jfy-container-{{ section.id }} {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+    .gh-jfy-grid {
+      gap: 8px;
+    }
+  }
+
+  /* Extra small mobile (<= 375px) */
+  @media (max-width: 375px) {
+    .gh-jfy-container-{{ section.id }} {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .gh-jfy-grid {
+      gap: 6px;
+    }
+  }
+</style>
+
+<section class="gh-jfy-section" id="ghJustForYou-{{ section.id }}">
+  <div class="container gh-jfy-container-{{ section.id }}">
+
+    <!-- 1. SECTION HEADER -->
+    <div class="gh-jfy-header">
+      <div class="gh-jfy-title-wrap">
+        <h2 class="gh-jfy-title">{{ title | escape }}</h2>
+      </div>
+
+      {% if show_view_all %}
+        <a href="{{ view_all_url }}" class="gh-jfy-viewall">
+          <span>{{ view_all_text | escape }}</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+      {% endif %}
+    </div>
+
+    <!-- 2. DYNAMIC PRODUCTS GRID (8 INITIAL -> +8 ON LOAD MORE) -->
+    {% if selected_collection != blank %}
+      {% if selected_collection.products_count > 0 %}
+        <div class="gh-jfy-grid js-jfy-grid" data-step="{{ load_more_step }}">
+          {% for product in selected_collection.products limit: max_total_products %}
+            <div class="gh-jfy-item js-jfy-item {% if forloop.index > initial_count %}gh-jfy-hidden{% endif %}">
+              {% render 'product-card', product: product %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- LOAD MORE BUTTON -->
+        {% if selected_collection.products_count > initial_count %}
+          <div class="gh-jfy-loadmore-wrap js-jfy-loadmore-wrap">
+            <button type="button" class="gh-jfy-loadmore-btn js-jfy-loadmore-btn">
+              <span class="js-jfy-loadmore-text">{{ section.settings.load_more_text | default: 'LOAD MORE' }}</span>
+              <span class="gh-jfy-spinner js-jfy-spinner" style="display: none;"></span>
+            </button>
+          </div>
+        {% endif %}
+
+      {% else %}
+        <div class="gh-jfy-empty-state">
+          <p>এই কালেকশনে বর্তমানে কোনো প্রোডাক্ট পাওয়া যায়নি।</p>
+        </div>
+      {% endif %}
+
+    {% else %}
+      {% if request.design_mode %}
+        <div class="gh-jfy-empty-state">
+          <p>⚠️ অনুগ্রহ করে থিম কাস্টমাইজার থেকে একটি কালেকশন সিলেক্ট করুন (Please select a collection in section settings).</p>
+        </div>
+      {% endif %}
+    {% endif %}
+
+  </div>
+</section>
+
+<script>
+  (function() {
+    const root = document.getElementById('ghJustForYou-{{ section.id }}');
+    if (!root) return;
+
+    const grid = root.querySelector('.js-jfy-grid');
+    const loadMoreBtn = root.querySelector('.js-jfy-loadmore-btn');
+    const loadMoreWrap = root.querySelector('.js-jfy-loadmore-wrap');
+    if (!grid || !loadMoreBtn || !loadMoreWrap) return;
+
+    const step = parseInt(grid.dataset.step, 10) || 8;
+
+    loadMoreBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const hiddenItems = grid.querySelectorAll('.gh-jfy-item.gh-jfy-hidden');
+      if (hiddenItems.length === 0) {
+        loadMoreWrap.style.display = 'none';
+        return;
+      }
+
+      const btnText = loadMoreBtn.querySelector('.js-jfy-loadmore-text');
+      const spinner = loadMoreBtn.querySelector('.js-jfy-spinner');
+      if (spinner && btnText) {
+        btnText.style.display = 'none';
+        spinner.style.display = 'inline-block';
+        loadMoreBtn.disabled = true;
+      }
+
+      setTimeout(() => {
+        // Reveal next batch (8 items)
+        const toShow = Array.from(hiddenItems).slice(0, step);
+        toShow.forEach((item) => {
+          item.classList.remove('gh-jfy-hidden');
+          item.classList.add('gh-jfy-fadein');
+        });
+
+        if (spinner && btnText) {
+          btnText.style.display = 'inline-block';
+          spinner.style.display = 'none';
+          loadMoreBtn.disabled = false;
+        }
+
+        // Hide button if no more products remain
+        const remainingHidden = grid.querySelectorAll('.gh-jfy-item.gh-jfy-hidden');
+        if (remainingHidden.length === 0) {
+          loadMoreWrap.style.display = 'none';
+        }
+      }, 250);
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Just For You Section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Collection Selection"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Select Collection",
+      "info": "Choose the collection to display products from"
+    },
+    {
+      "type": "header",
+      "content": "Section Header"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Heading",
+      "default": "Just For You"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 18,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "label": "Heading Font Size",
+      "default": 22
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_all",
+      "label": "Show 'View All' Link",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "view_all_text",
+      "label": "View All Text",
+      "default": "VIEW ALL PRODUCTS"
+    },
+    {
+      "type": "url",
+      "id": "view_all_url",
+      "label": "View All URL (Optional)",
+      "info": "Defaults to collection URL if left blank"
+    },
+    {
+      "type": "header",
+      "content": "Display & Load More Settings"
+    },
+    {
+      "type": "range",
+      "id": "initial_count",
+      "min": 4,
+      "max": 16,
+      "step": 4,
+      "label": "Initial Products Displayed",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "load_more_step",
+      "min": 4,
+      "max": 16,
+      "step": 4,
+      "label": "Products to Load per Click",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "max_total_products",
+      "min": 12,
+      "max": 48,
+      "step": 4,
+      "label": "Maximum Total Products",
+      "default": 48
+    },
+    {
+      "type": "text",
+      "id": "load_more_text",
+      "label": "Load More Button Text",
+      "default": "LOAD MORE"
+    },
+    {
+      "type": "header",
+      "content": "Layout & Styling"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section Width",
+      "options": [
+        { "value": "container", "label": "Container (1320px)" },
+        { "value": "container-fluid", "label": "Fluid Container (1820px)" },
+        { "value": "narrow", "label": "Narrow Container (991px)" },
+        { "value": "full", "label": "Full Width (100%)" }
+      ],
+      "default": "container"
+    },
+    {
+      "type": "color",
+      "id": "section_bg",
+      "label": "Section Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Section Spacing"
+    },
+    {
+      "type": "range",
+      "id": "margin_top",
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Top Spacing",
+      "default": 35
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom",
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Bottom Spacing",
+      "default": 45
+    }
+  ],
+  "presets": [
+    {
+      "name": "Just For You Section",
+      "settings": {
+        "title": "Just For You",
+        "initial_count": 8,
+        "load_more_step": 8,
+        "show_view_all": true
+      }
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,1454 @@
+{% comment %}
+  =============================================================================
+  SHOPIFY MAIN COLLECTION SECTION WITH DYNAMIC FILTERS & SNIPPET INTEGRATION
+  - File: sections/custom-main-collection.liquid
+  - Product Cards: Rendered strictly via snippets/product-card.liquid
+  - Grid: 4 Columns on Desktop, 3 on Tablet, 2 on Mobile
+  - Filters (Left Sidebar on Desktop / Slide-out Drawer on Mobile):
+    * Filter by Category (Sub-Collections):
+      - 100% AUTOMATIC detection from store navigation menus / linklists matching this collection.
+      - If this collection has no sub-collections, this filter is completely hidden (empty).
+    * Price Range Slider: Dual-handle slider (noUiSlider) with min/max live display
+    * Brands Filter: Selectable/configurable per collection via Blocks or comma-separated setting.
+      Displays live product count badge (e.g. 5, 3, 7, 1)
+    * Product Flag Filter: Selectable/configurable per collection via Blocks or comma-separated setting.
+      Displays live product count badge (e.g. Best Selling, New Arrival, Offered Items)
+    * "Clear All Filters" button with red gradient
+  - Dynamic Pagination:
+    * ONLY displayed when products exist and multiple pages are available (paginate.pages > 1).
+    * If no products or only 1 page, pagination buttons are hidden.
+  - Toolbox: "Sort By :" dropdown & "Show per page" dropdown (with custom orange select items)
+  - Floating Mobile Cart Drawer button [ 👜 0 Items ৳0.00 ]
+  - Responsive: Full touch & mouse compatibility
+  =============================================================================
+{% endcomment %}
+
+{% liquid
+  assign coll = collection | default: section.settings.collection
+  assign coll_title = coll.title | default: 'Collection'
+  assign per_page = section.settings.per_page | default: 16
+  assign section_width_setting = section.settings.section_width | default: 'container'
+  case section_width_setting
+    when 'container-fluid'
+      assign section_max_w = '1820px'
+    when 'narrow'
+      assign section_max_w = '991px'
+    when 'full'
+      assign section_max_w = '100%'
+    else
+      assign section_max_w = 'var(--container-max-width, 80%)'
+  endcase
+  assign max_price_limit = section.settings.price_max_range | default: 4500
+
+  # ---------------------------------------------------------------------------
+  # 1. 100% AUTOMATIC SUB-COLLECTION DETECTION (NO MANUAL MENU SELECTION NEEDED)
+  # ---------------------------------------------------------------------------
+  assign auto_subcollections = ''
+  assign has_subcollections = false
+
+  if coll != blank
+    # Method A: Check if a linklist handle matches collection.handle
+    if coll.handle != blank and linklists[coll.handle] != blank and linklists[coll.handle].links.size > 0
+      assign auto_subcollections = linklists[coll.handle].links
+      assign has_subcollections = true
+    endif
+
+    # Method B: Search all navigation menus to find this collection's nested sub-links
+    if has_subcollections == false
+      for l_list in linklists
+        for link in l_list.links
+          if link.url == coll.url or link.handle == coll.handle
+            if link.links.size > 0
+              assign auto_subcollections = link.links
+              assign has_subcollections = true
+              break
+            endif
+          endif
+          for sub_l in link.links
+            if sub_l.url == coll.url or sub_l.handle == coll.handle
+              if sub_l.links.size > 0
+                assign auto_subcollections = sub_l.links
+                assign has_subcollections = true
+                break
+              endif
+            endif
+          endfor
+          if has_subcollections
+            break
+          endif
+        endfor
+        if has_subcollections
+          break
+        endif
+      endfor
+    endif
+  endif
+
+  # ---------------------------------------------------------------------------
+  # 2. COLLECTION-WISE BRAND CONFIGURATION (BLOCKS OR SETTING OR AUTO-DETECT)
+  # ---------------------------------------------------------------------------
+  assign brand_blocks = section.blocks | where: 'type', 'brand'
+  assign configured_brands = ''
+  if brand_blocks.size > 0
+    for b in brand_blocks
+      if b.settings.title != blank
+        assign configured_brands = configured_brands | append: b.settings.title | append: '|||'
+      endif
+    endfor
+  elsif section.settings.selected_brands != blank
+    assign raw_brands = section.settings.selected_brands | split: ','
+    for b in raw_brands
+      assign clean_b = b | strip
+      if clean_b != blank
+        assign configured_brands = configured_brands | append: clean_b | append: '|||'
+      endif
+    endfor
+  else
+    if coll != blank and coll.products.size > 0
+      assign all_vendors = coll.products | map: 'vendor' | uniq
+      for v in all_vendors
+        if v != blank
+          assign configured_brands = configured_brands | append: v | append: '|||'
+        endif
+      endfor
+    else
+      assign configured_brands = 'GhorerBazar|||Honeyraj|||Khejuri|||Shosti food|||'
+    endif
+  endif
+  assign display_brands = configured_brands | split: '|||'
+
+  # ---------------------------------------------------------------------------
+  # 3. COLLECTION-WISE PRODUCT FLAGS CONFIGURATION (BLOCKS OR SETTING)
+  # ---------------------------------------------------------------------------
+  assign flag_blocks = section.blocks | where: 'type', 'flag'
+  assign configured_flags = ''
+  if flag_blocks.size > 0
+    for f in flag_blocks
+      if f.settings.title != blank
+        assign configured_flags = configured_flags | append: f.settings.title | append: '|||'
+      endif
+    endfor
+  elsif section.settings.selected_flags != blank
+    assign raw_flags = section.settings.selected_flags | split: ','
+    for f in raw_flags
+      assign clean_f = f | strip
+      if clean_f != blank
+        assign configured_flags = configured_flags | append: clean_f | append: '|||'
+      endif
+    endfor
+  else
+    assign configured_flags = 'Best Selling|||New Arrival|||Offered Items|||'
+  endif
+  assign display_flags = configured_flags | split: '|||'
+%}
+
+<!-- Include noUiSlider for the interactive dual-handle Price Range Slider -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
+
+<style>
+  #shopify-section-{{ section.id }} .gh-col-section {
+    width: 100%;
+    font-family: inherit;
+    color: #333333;
+    box-sizing: border-box;
+    background: #ffffff;
+    padding-bottom: 50px;
+  }
+
+  #shopify-section-{{ section.id }} * {
+    box-sizing: border-box;
+  }
+
+  #shopify-section-{{ section.id }} {
+    --section-max-width: {{ section_max_w }};
+  }
+  {% if section_width_setting == 'container' or section_width_setting == blank %}
+    @media (max-width: 1600px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 95%;
+      }
+    }
+    @media (max-width: 479px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 100%;
+      }
+    }
+  {% endif %}
+
+  .gh-col-container {
+    width: 100%;
+    max-width: var(--section-max-width);
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+  @media (max-width: 479px) {
+    .gh-col-container {
+      padding: 0 12px;
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+     1. BREADCRUMB HEADER BAR (MATCHES IMAGE 1 & 4)
+     -------------------------------------------------------------------------- */
+  .gh-col-breadcrumb-bar {
+    background: #f8fafc;
+    border-bottom: 1px solid #edf0f3;
+    padding: 18px 0;
+    margin-bottom: 24px;
+  }
+
+  .gh-col-breadcrumb-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .gh-col-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.3px;
+  }
+
+  .gh-col-breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: #6b7280;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .gh-col-breadcrumb-nav a {
+    color: #6b7280;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .gh-col-breadcrumb-nav a:hover {
+    color: #f37321;
+  }
+
+  .gh-col-breadcrumb-sep {
+    color: #9ca3af;
+    font-size: 12px;
+  }
+
+  .gh-col-breadcrumb-current {
+    color: #1f2937;
+    font-weight: 600;
+  }
+
+  /* --------------------------------------------------------------------------
+     2. MAIN LAYOUT: SIDEBAR + PRODUCT CONTENT
+     -------------------------------------------------------------------------- */
+  .gh-col-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+    position: relative;
+  }
+
+  /* SIDEBAR (DESKTOP STICKY) */
+  .gh-col-sidebar {
+    width: 270px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 90px;
+    z-index: 10;
+  }
+
+  /* Clear All Filters Button */
+  .gh-clear-filters-btn {
+    display: none;
+    width: 100%;
+    padding: 9px 12px;
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3);
+    margin-bottom: 16px;
+    transition: opacity 0.2s;
+    text-align: center;
+  }
+
+  .gh-clear-filters-btn:hover {
+    opacity: 0.9;
+  }
+
+  .gh-clear-filters-btn.is-active {
+    display: block;
+  }
+
+  /* Widget Card */
+  .gh-col-widget {
+    background: #ffffff;
+    border: 1px solid #edf0f3;
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  }
+
+  .gh-widget-title-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    padding-bottom: 10px;
+    position: relative;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #edf0f3;
+  }
+
+  .gh-widget-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1f2937;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+    position: relative;
+    padding-bottom: 10px;
+    margin-bottom: -11px;
+  }
+
+  .gh-widget-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 2px;
+    background: #f37321;
+    border-radius: 2px 2px 0 0;
+  }
+
+  .gh-widget-toggle-icon {
+    font-size: 18px;
+    font-weight: 600;
+    color: #6b7280;
+    line-height: 1;
+    transition: transform 0.2s;
+  }
+
+  .gh-col-widget.is-collapsed .gh-widget-body {
+    display: none;
+  }
+
+  .gh-col-widget.is-collapsed .gh-widget-title::after {
+    display: none;
+  }
+
+  .gh-col-widget.is-collapsed .gh-widget-title-wrap {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  /* Filter Checkbox Lists */
+  .gh-filter-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .gh-filter-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: #4b5563;
+    line-height: 1.35;
+    user-select: none;
+  }
+
+  .gh-filter-item-left {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .gh-filter-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #f37321;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .gh-filter-item:hover .gh-filter-label {
+    color: #f37321;
+  }
+
+  .gh-filter-count {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    line-height: 1;
+  }
+
+  .gh-filter-count-brand {
+    background: #e8f4fd;
+    color: #007cba;
+  }
+
+  .gh-filter-count-flag {
+    background: #fff3e0;
+    color: #e65c00;
+  }
+
+  /* Price Range Slider (noUiSlider Custom Styles) */
+  .gh-price-display-wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }
+
+  .gh-price-slider-el {
+    margin: 0 10px 10px 10px;
+    height: 6px;
+  }
+
+  .noUi-target {
+    background: #e5e7eb;
+    border: none;
+    border-radius: 4px;
+    box-shadow: none;
+  }
+
+  .noUi-connect {
+    background: #f37321 !important;
+  }
+
+  .noUi-horizontal .noUi-handle {
+    width: 20px !important;
+    height: 20px !important;
+    top: -7px !important;
+    right: -10px !important;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #f37321;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    cursor: grab;
+    outline: none;
+  }
+
+  .noUi-handle:before, .noUi-handle:after {
+    display: none !important;
+  }
+
+  /* --------------------------------------------------------------------------
+     3. PRODUCT MAIN CONTENT & TOP TOOLBOX (MATCHES IMAGE 1, 2, 3, 4)
+     -------------------------------------------------------------------------- */
+  .gh-col-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Toolbox Bar */
+  .gh-col-toolbox {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 1px solid #edf0f3;
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 24px;
+    gap: 12px;
+  }
+
+  .gh-toolbox-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Mobile Filters Trigger Button (Visible only on mobile/tablet <= 991px) */
+  .gh-mobile-filter-trigger {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: #ffffff;
+    border: 1.5px solid #f37321;
+    color: #f37321;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .gh-mobile-filter-trigger:hover {
+    background: #f37321;
+    color: #ffffff;
+  }
+
+  .gh-toolbox-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  /* Custom Selects with Orange Arrow (Matches Image 2 & 3) */
+  .gh-select-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .gh-custom-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23f37321' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 7px 32px 7px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1f2937;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .gh-custom-select:focus {
+    border-color: #f37321;
+    box-shadow: 0 0 0 2px rgba(243, 115, 33, 0.15);
+  }
+
+  /* Dropdown Options Styling (Orange text matching Image 2) */
+  .gh-custom-select option {
+    color: #f37321;
+    font-weight: 500;
+    padding: 6px 10px;
+    background: #ffffff;
+  }
+
+  .gh-custom-select option:first-child {
+    color: #1f2937;
+  }
+
+  /* --------------------------------------------------------------------------
+     4. PRODUCT GRID (STRICT 4 COLUMNS ON DESKTOP, 2 ON MOBILE)
+     -------------------------------------------------------------------------- */
+  .gh-product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px 16px;
+    width: 100%;
+  }
+
+  /* Tablet (768px - 991px): 3 columns */
+  @media (max-width: 991px) {
+    .gh-product-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px 14px;
+    }
+  }
+
+  /* Mobile (<= 767px): 2 columns */
+  @media (max-width: 767px) {
+    .gh-product-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px 10px;
+    }
+  }
+
+  /* Large mobile (<= 575px) */
+  @media (max-width: 575px) {
+    .gh-product-grid {
+      gap: 10px 8px;
+    }
+  }
+
+  /* Small mobile (<= 479px) */
+  @media (max-width: 479px) {
+    .gh-product-grid {
+      gap: 8px 6px;
+    }
+  }
+
+  /* Extra small mobile (<= 375px) */
+  @media (max-width: 375px) {
+    .gh-product-grid {
+      gap: 6px 4px;
+    }
+  }
+
+  /* Grid item wrapper to preserve aspect */
+  .gh-grid-item {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  /* --------------------------------------------------------------------------
+     5. DYNAMIC PAGINATION (ONLY SHOWN ACCORDING TO PRODUCTS)
+     -------------------------------------------------------------------------- */
+  .gh-pagination-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 36px;
+    padding-top: 20px;
+    border-top: 1px solid #edf0f3;
+  }
+
+  .gh-pagination-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .gh-page-btn {
+    min-width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #374151;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    padding: 0 6px;
+  }
+
+  .gh-page-btn:hover {
+    border-color: #f37321;
+    color: #f37321;
+  }
+
+  .gh-page-btn.is-active {
+    background: #f37321;
+    border-color: #f37321;
+    color: #ffffff;
+  }
+
+  .gh-page-btn.is-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .gh-pagination-count {
+    font-size: 13px;
+    color: #6b7280;
+  }
+
+  /* --------------------------------------------------------------------------
+     6. MOBILE FILTER DRAWER & OVERLAY (MATCHES IMAGE 5)
+     -------------------------------------------------------------------------- */
+  .gh-mobile-filter-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999998;
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .gh-mobile-filter-overlay.is-active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  @media (max-width: 991px) {
+    .gh-col-sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 300px;
+      max-width: 85vw;
+      height: 100%;
+      background: #f8fafc;
+      z-index: 999999;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      overflow-y: auto;
+      padding: 20px 16px 60px;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .gh-col-sidebar.is-open {
+      transform: translateX(0);
+    }
+
+    .gh-mobile-sidebar-header {
+      display: flex !important;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .gh-mobile-filter-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0;
+    }
+
+    .gh-mobile-sidebar-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #374151;
+      cursor: pointer;
+    }
+
+    .gh-mobile-filter-trigger {
+      display: inline-flex;
+    }
+  }
+
+  .gh-mobile-sidebar-header {
+    display: none;
+  }
+
+  /* --------------------------------------------------------------------------
+     7. FLOATING MOBILE CART BADGE (MATCHES IMAGE 4)
+     -------------------------------------------------------------------------- */
+  .gh-floating-cart-badge {
+    display: none;
+    position: fixed;
+    right: 0;
+    top: 55%;
+    transform: translateY(-50%);
+    background: #f37321;
+    color: #ffffff;
+    padding: 10px 14px;
+    border-radius: 8px 0 0 8px;
+    box-shadow: -3px 4px 15px rgba(243, 115, 33, 0.4);
+    z-index: 9999;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .gh-floating-cart-icon-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .gh-floating-cart-icon-wrap svg {
+    width: 16px;
+    height: 16px;
+    stroke: #ffffff;
+  }
+
+  .gh-floating-cart-price {
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  @media (max-width: 767px) {
+    .gh-floating-cart-badge {
+      display: flex;
+    }
+  }
+</style>
+
+<div class="gh-col-section" id="ghColSection-{{ section.id }}">
+  
+  <!-- BREADCRUMB HEADER (MATCHES IMAGE 1 & 4) -->
+  <div class="gh-col-breadcrumb-bar">
+    <div class="container gh-col-container">
+      <div class="gh-col-breadcrumb-inner">
+        <h1 class="gh-col-title">{{ coll_title }}</h1>
+        <ul class="gh-col-breadcrumb-nav">
+          <li><a href="{{ routes.root_url | default: '/' }}">Home</a></li>
+          <li class="gh-col-breadcrumb-sep">&gt;</li>
+          <li class="gh-col-breadcrumb-current">{{ coll_title }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="container gh-col-container">
+    <div class="gh-col-layout">
+      
+      <!-- MOBILE FILTER OVERLAY -->
+      <div class="gh-mobile-filter-overlay js-filter-overlay"></div>
+
+      <!-- SIDEBAR FILTERS (DESKTOP STICKY & MOBILE DRAWER) -->
+      <aside class="gh-col-sidebar js-col-sidebar" id="ghColSidebar">
+        
+        <!-- Mobile Drawer Header with Close Button -->
+        <div class="gh-mobile-sidebar-header">
+          <h3 class="gh-mobile-filter-title">Filters</h3>
+          <button type="button" class="gh-mobile-sidebar-close js-filter-close" aria-label="Close Filters">&times;</button>
+        </div>
+
+        <!-- Clear All Filters Button -->
+        <button type="button" class="gh-clear-filters-btn js-clear-filters">
+          &times; Clear All Filters
+        </button>
+
+        <!-- 1. FILTER BY CATEGORY (SUB-COLLECTIONS) -->
+        <!-- AUTOMATIC DETECTION: Renders ONLY if this collection has sub-collections. Otherwise completely hidden! -->
+        {% if has_subcollections and auto_subcollections.size > 0 %}
+          <div class="gh-col-widget js-col-widget">
+            <div class="gh-widget-title-wrap js-widget-toggle">
+              <h4 class="gh-widget-title">{{ section.settings.sub_coll_title | default: 'Filter by Category' }}</h4>
+              <span class="gh-widget-toggle-icon">&minus;</span>
+            </div>
+            <div class="gh-widget-body">
+              <ul class="gh-filter-list">
+                {% for sub_link in auto_subcollections %}
+                  <li class="gh-filter-item">
+                    <label class="gh-filter-item-left">
+                      <input type="checkbox" class="gh-filter-checkbox js-filter-subcoll" value="{{ sub_link.title | escape }}" data-url="{{ sub_link.url }}">
+                      <span class="gh-filter-label">{{ sub_link.title }}</span>
+                    </label>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- 2. PRICE RANGE SLIDER (MATCHES IMAGE 1 & 5) -->
+        {% if section.settings.enable_price_filter %}
+          <div class="gh-col-widget js-col-widget">
+            <div class="gh-widget-title-wrap js-widget-toggle">
+              <h4 class="gh-widget-title">Price Range</h4>
+              <span class="gh-widget-toggle-icon">&minus;</span>
+            </div>
+            <div class="gh-widget-body">
+              <div class="gh-price-display-wrap">
+                <span>৳ <span id="priceMinDisplay">0</span></span>
+                <span>৳ <span id="priceMaxDisplay">{{ max_price_limit }}</span></span>
+              </div>
+              <div id="ghPriceSlider" class="gh-price-slider-el"></div>
+              <input type="hidden" id="filterMinPrice" value="0">
+              <input type="hidden" id="filterMaxPrice" value="{{ max_price_limit }}">
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- 3. BRANDS FILTER (COLLECTION-WISE CONFIGURABLE VIA BLOCKS & SETTINGS) -->
+        {% if section.settings.enable_brand_filter and display_brands.size > 0 %}
+          <div class="gh-col-widget js-col-widget">
+            <div class="gh-widget-title-wrap js-widget-toggle">
+              <h4 class="gh-widget-title">Brands</h4>
+              <span class="gh-widget-toggle-icon">&minus;</span>
+            </div>
+            <div class="gh-widget-body">
+              <ul class="gh-filter-list" id="brandFilterList">
+                {% for b_title in display_brands %}
+                  {% if b_title == blank %}{% continue %}{% endif %}
+                  {% assign b_count = 0 %}
+                  {% if coll != blank and coll.products.size > 0 %}
+                    {% for p in coll.products %}
+                      {% if p.vendor == b_title %}
+                        {% assign b_count = b_count | plus: 1 %}
+                      {% endif %}
+                    {% endfor %}
+                  {% else %}
+                    {% assign b_count = 0 %}
+                  {% endif %}
+                  <li class="gh-filter-item">
+                    <label class="gh-filter-item-left">
+                      <input type="checkbox" class="gh-filter-checkbox js-filter-brand" value="{{ b_title | escape }}">
+                      <span class="gh-filter-label">{{ b_title }}</span>
+                    </label>
+                    <span class="gh-filter-count gh-filter-count-brand" data-filter-type="brand" data-name="{{ b_title | escape }}">{{ b_count }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- 4. PRODUCT FLAG FILTER (COLLECTION-WISE CONFIGURABLE VIA BLOCKS & SETTINGS) -->
+        {% if section.settings.enable_flag_filter and display_flags.size > 0 %}
+          <div class="gh-col-widget js-col-widget">
+            <div class="gh-widget-title-wrap js-widget-toggle">
+              <h4 class="gh-widget-title">Product Flag</h4>
+              <span class="gh-widget-toggle-icon">&minus;</span>
+            </div>
+            <div class="gh-widget-body">
+              <ul class="gh-filter-list" id="flagFilterList">
+                {% for f_title in display_flags %}
+                  {% if f_title == blank %}{% continue %}{% endif %}
+                  {% assign f_count = 0 %}
+                  {% assign f_lower = f_title | downcase %}
+                  {% if coll != blank and coll.products.size > 0 %}
+                    {% for p in coll.products %}
+                      {% for t in p.tags %}
+                        {% assign t_lower = t | downcase %}
+                        {% if t_lower == f_lower or t_lower contains f_lower %}
+                          {% assign f_count = f_count | plus: 1 %}
+                          {% break %}
+                        {% endif %}
+                      {% endfor %}
+                    {% endfor %}
+                  {% else %}
+                    {% assign f_count = 0 %}
+                  {% endif %}
+                  <li class="gh-filter-item">
+                    <label class="gh-filter-item-left">
+                      <input type="checkbox" class="gh-filter-checkbox js-filter-flag" value="{{ f_title | escape }}">
+                      <span class="gh-filter-label">{{ f_title }}</span>
+                    </label>
+                    <span class="gh-filter-count gh-filter-count-flag" data-filter-type="flag" data-name="{{ f_title | escape }}">{{ f_count }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        {% endif %}
+
+      </aside>
+
+      <!-- MAIN PRODUCT AREA -->
+      <main class="gh-col-main">
+        
+        <!-- TOP TOOLBOX (SORTING & PER PAGE SELECTS) -->
+        <div class="gh-col-toolbox">
+          <div class="gh-toolbox-left">
+            <!-- Mobile Toggle Button -->
+            <button type="button" class="gh-mobile-filter-trigger js-filter-open">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <span>Filters</span>
+            </button>
+
+            <!-- Sort By Select (Image 3) -->
+            <div class="gh-select-group">
+              <label for="ghSortBySelect">Sort By :</label>
+              <select id="ghSortBySelect" class="gh-custom-select js-sort-select">
+                <option value="default">Default Sorting</option>
+                <option value="latest">Sort by Latest</option>
+                <option value="oldest">Sort by Oldest</option>
+                <option value="price-asc">Price Low to High</option>
+                <option value="price-desc">Price High to Low</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Per Page Select (Image 2) -->
+          <div class="gh-toolbox-right">
+            <div class="gh-select-group">
+              <select id="ghPerPageSelect" class="gh-custom-select js-perpage-select">
+                <option value="16">Default</option>
+                <option value="16">Show 16</option>
+                <option value="20">Show 20</option>
+                <option value="24">Show 24</option>
+                <option value="36">Show 36</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {% if coll != blank and coll.products.size > 0 %}
+          {% paginate coll.products by per_page %}
+            <!-- 4-COLUMN PRODUCT GRID (MATCHES IMAGE 1 & 4) -->
+            <div class="gh-product-grid" id="ghProductGrid">
+              {% for prod in coll.products %}
+                <div class="gh-grid-item js-grid-item" 
+                     data-price="{{ prod.price | divided_by: 100.0 }}"
+                     data-brand="{{ prod.vendor | escape }}"
+                     data-tags="{{ prod.tags | join: ',' | downcase }}"
+                     data-title="{{ prod.title | downcase }}"
+                     data-created="{{ prod.created_at | date: '%s' }}">
+                  {% render 'product-card', product: prod %}
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- DYNAMIC PRODUCT-BASED PAGINATION (ONLY SHOWN WHEN MULTIPLE PAGES EXIST) -->
+            {% if paginate.pages > 1 %}
+              <div class="gh-pagination-wrap">
+                <nav class="gh-pagination-nav" aria-label="Pagination">
+                  {% if paginate.previous %}
+                    <a href="{{ paginate.previous.url }}" class="gh-page-btn" title="Previous Page">&lsaquo;</a>
+                  {% else %}
+                    <span class="gh-page-btn is-disabled">&lsaquo;</span>
+                  {% endif %}
+
+                  {% for part in paginate.parts %}
+                    {% if part.is_link %}
+                      <a href="{{ part.url }}" class="gh-page-btn">{{ part.title }}</a>
+                    {% elsif part.title == paginate.current_page %}
+                      <span class="gh-page-btn is-active">{{ part.title }}</span>
+                    {% else %}
+                      <span class="gh-page-btn is-disabled">{{ part.title }}</span>
+                    {% endif %}
+                  {% endfor %}
+
+                  {% if paginate.next %}
+                    <a href="{{ paginate.next.url }}" class="gh-page-btn" title="Next Page">&rsaquo;</a>
+                  {% else %}
+                    <span class="gh-page-btn is-disabled">&rsaquo;</span>
+                  {% endif %}
+                </nav>
+                <div class="gh-pagination-count">
+                  Showing <span id="showingStart">{{ paginate.current_offset | plus: 1 }}</span> - <span id="showingEnd">{% if paginate.next %}{{ paginate.current_offset | plus: paginate.page_size }}{% else %}{{ coll.products_count }}{% endif %}</span> of <span id="showingTotal">{{ coll.products_count }}</span> results
+                </div>
+              </div>
+            {% elsif coll.products_count > 0 %}
+              <div class="gh-pagination-wrap" style="justify-content: flex-end;">
+                <div class="gh-pagination-count">
+                  Showing 1 - {{ coll.products_count }} of {{ coll.products_count }} results
+                </div>
+              </div>
+            {% endif %}
+          {% endpaginate %}
+        {% else %}
+          <!-- EMPTY COLLECTION STATE: NO PRODUCTS & NO PAGINATION -->
+          <div class="gh-empty-collection" style="text-align: center; padding: 70px 20px; background: #ffffff; border: 1px solid #edf0f3; border-radius: 8px;">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 16px; display: block;">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <h3 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0 0 8px;">No products found</h3>
+            <p style="font-size: 14px; color: #6b7280; margin: 0 0 22px;">There are no products in this collection at the moment.</p>
+            <a href="{{ routes.all_products_collection_url | default: '/collections/all' }}" style="display: inline-block; padding: 10px 24px; background: #f37321; color: #ffffff; border-radius: 6px; text-decoration: none; font-size: 13.5px; font-weight: 600; box-shadow: 0 2px 8px rgba(243,115,33,0.3);">Browse All Products</a>
+          </div>
+        {% endif %}
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- FLOATING MOBILE CART BADGE (MATCHES IMAGE 4) -->
+  <a href="javascript:void(0)" class="gh-floating-cart-badge js-gh-cart-open" title="Open Shopping Cart">
+    <div class="gh-floating-cart-icon-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <path d="M16 10a4 4 0 0 1-8 0"></path>
+      </svg>
+      <span class="js-cart-badge-count">0</span> Items
+    </div>
+    <span class="gh-floating-cart-price">৳0.00</span>
+  </a>
+
+</div>
+
+<script>
+  (function() {
+    const root = document.getElementById('ghColSection-{{ section.id }}');
+    if (!root) return;
+
+    // Sidebar & Mobile Drawer Elements
+    const sidebar = root.querySelector('.js-col-sidebar');
+    const overlay = root.querySelector('.js-filter-overlay');
+    const openBtn = root.querySelector('.js-filter-open');
+    const closeBtn = root.querySelector('.js-filter-close');
+    const clearBtn = root.querySelector('.js-clear-filters');
+
+    // Mobile Drawer Open / Close
+    function openSidebar() {
+      if (sidebar) sidebar.classList.add('is-open');
+      if (overlay) overlay.classList.add('is-active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+      if (sidebar) sidebar.classList.remove('is-open');
+      if (overlay) overlay.classList.remove('is-active');
+      document.body.style.overflow = '';
+    }
+
+    if (openBtn) openBtn.addEventListener('click', openSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+
+    // Collapsible Widgets Toggle (Title - / +)
+    root.querySelectorAll('.js-widget-toggle').forEach(header => {
+      header.addEventListener('click', function() {
+        const widget = this.closest('.js-col-widget');
+        const icon = this.querySelector('.gh-widget-toggle-icon');
+        if (!widget) return;
+        widget.classList.toggle('is-collapsed');
+        if (icon) {
+          icon.innerHTML = widget.classList.contains('is-collapsed') ? '&plus;' : '&minus;';
+        }
+      });
+    });
+
+    // ------------------------------------------------------------------------
+    // DUAL-HANDLE PRICE RANGE SLIDER (noUiSlider)
+    // ------------------------------------------------------------------------
+    const priceSlider = root.querySelector('#ghPriceSlider');
+    const minDisplay = root.querySelector('#priceMinDisplay');
+    const maxDisplay = root.querySelector('#priceMaxDisplay');
+    const minInput = root.querySelector('#filterMinPrice');
+    const maxInput = root.querySelector('#filterMaxPrice');
+
+    const sliderMax = {{ max_price_limit }};
+    let currentMin = 0;
+    let currentMax = sliderMax;
+
+    if (priceSlider && typeof noUiSlider !== 'undefined') {
+      noUiSlider.create(priceSlider, {
+        start: [0, sliderMax],
+        connect: true,
+        step: 10,
+        range: {
+          'min': 0,
+          'max': sliderMax
+        }
+      });
+
+      priceSlider.noUiSlider.on('update', function(values) {
+        currentMin = Math.round(values[0]);
+        currentMax = Math.round(values[1]);
+        if (minDisplay) minDisplay.textContent = currentMin.toLocaleString('en-US');
+        if (maxDisplay) maxDisplay.textContent = currentMax.toLocaleString('en-US');
+        if (minInput) minInput.value = currentMin;
+        if (maxInput) maxInput.value = currentMax;
+      });
+
+      priceSlider.noUiSlider.on('change', function() {
+        applyFilters();
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // FILTER LOGIC & FILTER EVENTS
+    // ------------------------------------------------------------------------
+    const gridItems = Array.from(root.querySelectorAll('.js-grid-item'));
+
+    // Dynamic Filter Count Badge Calculation
+    function updateFilterCounts() {
+      // Brands count
+      root.querySelectorAll('.gh-filter-count[data-filter-type="brand"]').forEach(badge => {
+        const brandName = (badge.dataset.name || '').toLowerCase().trim();
+        const count = gridItems.filter(item => (item.dataset.brand || '').toLowerCase().trim() === brandName).length;
+        if (count > 0) badge.textContent = count;
+      });
+
+      // Flags count
+      root.querySelectorAll('.gh-filter-count[data-filter-type="flag"]').forEach(badge => {
+        const flagName = (badge.dataset.name || '').toLowerCase().trim();
+        const count = gridItems.filter(item => (item.dataset.tags || '').toLowerCase().includes(flagName)).length;
+        if (count > 0) badge.textContent = count;
+      });
+    }
+
+    updateFilterCounts();
+
+    function applyFilters() {
+      // 1. Get Selected Sub-Collections
+      const selectedSubColls = Array.from(root.querySelectorAll('.js-filter-subcoll:checked')).map(cb => cb.value.toLowerCase().trim());
+
+      // 2. Get Selected Brands
+      const selectedBrands = Array.from(root.querySelectorAll('.js-filter-brand:checked')).map(cb => cb.value.toLowerCase().trim());
+
+      // 3. Get Selected Flags
+      const selectedFlags = Array.from(root.querySelectorAll('.js-filter-flag:checked')).map(cb => cb.value.toLowerCase().trim());
+
+      let isAnyFilterActive = (selectedSubColls.length > 0 || selectedBrands.length > 0 || selectedFlags.length > 0 || currentMin > 0 || currentMax < sliderMax);
+
+      // Toggle Clear All Filters button
+      if (clearBtn) {
+        if (isAnyFilterActive) clearBtn.classList.add('is-active');
+        else clearBtn.classList.remove('is-active');
+      }
+
+      let visibleCount = 0;
+
+      gridItems.forEach(item => {
+        const price = parseFloat(item.dataset.price) || 0;
+        const brand = (item.dataset.brand || '').toLowerCase().trim();
+        const tags = (item.dataset.tags || '').toLowerCase();
+        const title = (item.dataset.title || '').toLowerCase();
+
+        let matchesPrice = (price >= currentMin && price <= currentMax);
+        let matchesBrand = (selectedBrands.length === 0 || selectedBrands.includes(brand));
+        
+        let matchesSubColl = true;
+        if (selectedSubColls.length > 0) {
+          matchesSubColl = selectedSubColls.some(sc => tags.includes(sc) || title.includes(sc));
+        }
+
+        let matchesFlag = true;
+        if (selectedFlags.length > 0) {
+          matchesFlag = selectedFlags.some(flag => tags.includes(flag));
+        }
+
+        if (matchesPrice && matchesBrand && matchesSubColl && matchesFlag) {
+          item.style.display = '';
+          visibleCount++;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+
+      // Update showing count
+      const totalDisplay = root.querySelector('#showingTotal');
+      const endDisplay = root.querySelector('#showingEnd');
+      if (totalDisplay) totalDisplay.textContent = visibleCount;
+      if (endDisplay) endDisplay.textContent = Math.min(visibleCount, 16);
+    }
+
+    // Checkbox changes
+    root.querySelectorAll('.js-filter-subcoll, .js-filter-brand, .js-filter-flag').forEach(cb => {
+      cb.addEventListener('change', applyFilters);
+    });
+
+    // Clear All Filters Click
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        root.querySelectorAll('.js-filter-subcoll, .js-filter-brand, .js-filter-flag').forEach(cb => cb.checked = false);
+        if (priceSlider && priceSlider.noUiSlider) {
+          priceSlider.noUiSlider.set([0, sliderMax]);
+        }
+        currentMin = 0;
+        currentMax = sliderMax;
+        applyFilters();
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // SORTING HANDLER (MATCHES IMAGE 3)
+    // ------------------------------------------------------------------------
+    const sortSelect = root.querySelector('.js-sort-select');
+    const productGrid = root.querySelector('#ghProductGrid');
+
+    if (sortSelect && productGrid) {
+      sortSelect.addEventListener('change', function() {
+        const val = this.value;
+        const items = Array.from(productGrid.children);
+
+        items.sort((a, b) => {
+          const priceA = parseFloat(a.dataset.price) || 0;
+          const priceB = parseFloat(b.dataset.price) || 0;
+          const createdA = parseInt(a.dataset.created, 10) || 0;
+          const createdB = parseInt(b.dataset.created, 10) || 0;
+
+          if (val === 'price-asc') return priceA - priceB;
+          if (val === 'price-desc') return priceB - priceA;
+          if (val === 'latest') return createdB - createdA;
+          if (val === 'oldest') return createdA - createdB;
+          return 0;
+        });
+
+        items.forEach(el => productGrid.appendChild(el));
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // PER PAGE HANDLER (MATCHES IMAGE 2)
+    // ------------------------------------------------------------------------
+    const perPageSelect = root.querySelector('.js-perpage-select');
+    if (perPageSelect) {
+      perPageSelect.addEventListener('change', function() {
+        const limit = parseInt(this.value, 10) || 16;
+        let shown = 0;
+        gridItems.forEach(item => {
+          if (item.style.display !== 'none') {
+            shown++;
+            if (shown > limit) item.style.display = 'none';
+          }
+        });
+        const endDisplay = root.querySelector('#showingEnd');
+        if (endDisplay) endDisplay.textContent = Math.min(shown, limit);
+      });
+    }
+
+    // Auto-init cards if snippet is loaded
+    if (typeof window.initGhProductCards === 'function') {
+      window.initGhProductCards();
+      window.syncGhProductCardsWithCart();
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Collection Page",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Collection Settings"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection Override",
+      "info": "Leave blank to use the current template collection"
+    },
+    {
+      "type": "range",
+      "id": "per_page",
+      "min": 8,
+      "max": 36,
+      "step": 4,
+      "label": "Products per page",
+      "default": 16
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section Width",
+      "options": [
+        { "value": "container", "label": "Container (1320px)" },
+        { "value": "container-fluid", "label": "Fluid Container (1820px)" },
+        { "value": "narrow", "label": "Narrow Container (991px)" },
+        { "value": "full", "label": "Full Width (100%)" }
+      ],
+      "default": "container"
+    },
+    {
+      "type": "header",
+      "content": "Category Filter (Automatic)"
+    },
+    {
+      "type": "paragraph",
+      "content": "Sub-collections are detected automatically from store navigation menus matching this collection. If this collection has no sub-collections, this filter will be automatically hidden."
+    },
+    {
+      "type": "text",
+      "id": "sub_coll_title",
+      "label": "Category Heading",
+      "default": "Filter by Category"
+    },
+    {
+      "type": "header",
+      "content": "Price Range Filter"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_price_filter",
+      "label": "Enable Price Filter",
+      "default": true
+    },
+    {
+      "type": "number",
+      "id": "price_max_range",
+      "label": "Maximum Price Slider Range (৳)",
+      "default": 4500
+    },
+    {
+      "type": "header",
+      "content": "Brand & Product Flag Selection (Collection-wise)"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_brand_filter",
+      "label": "Enable Brands Filter",
+      "default": true
+    },
+    {
+      "type": "textarea",
+      "id": "selected_brands",
+      "label": "Brands to show (comma-separated)",
+      "info": "List the brands for this collection (e.g. GhorerBazar, Honeyraj, Khejuri, Shosti food). Alternatively, add Brand blocks below.",
+      "default": "GhorerBazar, Honeyraj, Khejuri, Shosti food"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_flag_filter",
+      "label": "Enable Product Flag Filter",
+      "default": true
+    },
+    {
+      "type": "textarea",
+      "id": "selected_flags",
+      "label": "Product Flags to show (comma-separated)",
+      "info": "List the flags for this collection (e.g. Best Selling, New Arrival, Offered Items). Alternatively, add Product Flag blocks below.",
+      "default": "Best Selling, New Arrival, Offered Items"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "brand",
+      "name": "Brand",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Brand Name",
+          "default": "GhorerBazar"
+        }
+      ]
+    },
+    {
+      "type": "flag",
+      "name": "Product Flag",
+      "settings": [
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Flag / Tag Name",
+          "default": "Best Selling"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Main Collection Section",
+      "blocks": [
+        { "type": "brand", "settings": { "title": "GhorerBazar" } },
+        { "type": "brand", "settings": { "title": "Honeyraj" } },
+        { "type": "brand", "settings": { "title": "Khejuri" } },
+        { "type": "brand", "settings": { "title": "Shosti food" } },
+        { "type": "flag", "settings": { "title": "Best Selling" } },
+        { "type": "flag", "settings": { "title": "New Arrival" } },
+        { "type": "flag", "settings": { "title": "Offered Items" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

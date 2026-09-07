@@ -1,0 +1,620 @@
+{% comment %}
+  =============================================================================
+  SHOPIFY BRAND PRODUCT SECTION (100% DYNAMIC COLLECTION-WISE)
+  - File: sections/custom-brand-products.liquid
+  - Dynamic Products: Pulls directly from selected collection (NO static demo products)
+  - Dynamic Brand Info: Uses collection.image (Logo) and collection.description
+  - Section Heading: "Brand Products" with orange indicator bar
+  - Product Grid: 4 Columns on Desktop, 3/2 on Tablet, 2 on Mobile
+  - Product Card: Rendered via snippets/product-card.liquid
+  - Live Pagination: Dynamically counts and paginates collection products
+  =============================================================================
+{% endcomment %}
+
+{% liquid
+  # 1. Resolve collection: Section setting -> Current template collection
+  assign selected_collection = section.settings.collection
+  if selected_collection == blank and collection != blank
+    assign selected_collection = collection
+  endif
+
+  # Ensure collection object if handle string was provided
+  if selected_collection != blank and selected_collection.products == blank
+    assign selected_collection = collections[selected_collection]
+  endif
+
+  assign per_page = section.settings.products_per_page | default: 20
+  assign section_width_setting = section.settings.section_width | default: 'container'
+  case section_width_setting
+    when 'container-fluid'
+      assign section_max_w = '1820px'
+    when 'narrow'
+      assign section_max_w = '991px'
+    when 'full'
+      assign section_max_w = '100%'
+    else
+      assign section_max_w = 'var(--container-max-width, 80%)'
+  endcase
+  assign title = section.settings.title | default: 'Brand Products'
+
+  # 2. Dynamic Brand Logo: Section override -> collection.image
+  assign brand_logo = section.settings.brand_logo
+  if brand_logo == blank and selected_collection != blank and selected_collection.image != blank
+    assign brand_logo = selected_collection.image
+  endif
+
+  # 3. Dynamic Brand Description: Section override -> collection.description
+  assign brand_desc = section.settings.brand_description
+  if brand_desc == blank and selected_collection != blank and selected_collection.description != blank
+    assign brand_desc = selected_collection.description
+  endif
+%}
+
+<style>
+  #shopify-section-{{ section.id }} {
+    --section-max-width: {{ section_max_w }};
+  }
+  {% if section_width_setting == 'container' or section_width_setting == blank %}
+    @media (max-width: 1600px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 95%;
+      }
+    }
+    @media (max-width: 479px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 100%;
+      }
+    }
+  {% endif %}
+
+  #shopify-section-{{ section.id }} .gh-brand-section-wrap {
+    width: 100%;
+    padding-top: {{ section.settings.margin_top | default: 35 }}px;
+    padding-bottom: {{ section.settings.margin_bottom | default: 50 }}px;
+    background: {{ section.settings.section_bg | default: '#fafbfd' }};
+    box-sizing: border-box;
+  }
+
+  #shopify-section-{{ section.id }} * {
+    box-sizing: border-box;
+  }
+
+  .gh-brand-container-{{ section.id }} {
+    width: 100%;
+    max-width: var(--section-max-width);
+    margin: 0 auto;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+  @media (max-width: 479px) {
+    .gh-brand-container-{{ section.id }} {
+      padding: 0 12px;
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+     1. TOP BRAND HEADER: LOGO CARD (LEFT) + DESCRIPTION (RIGHT)
+     -------------------------------------------------------------------------- */
+  .gh-brand-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+    margin-bottom: 35px;
+  }
+
+  /* Left Logo Box */
+  .gh-brand-logo-box {
+    flex: 0 0 280px;
+    max-width: 280px;
+    height: 110px;
+    background: #ffffff;
+    border: 1px solid #edf0f3;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  }
+
+  .gh-brand-logo-img {
+    max-width: 85%;
+    max-height: 72px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
+
+  .gh-brand-logo-fallback {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    text-align: center;
+    letter-spacing: -0.2px;
+  }
+
+  /* Right Description Box */
+  .gh-brand-desc-box {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: #4b5563;
+  }
+
+  .gh-brand-desc-text {
+    margin: 0;
+    position: relative;
+  }
+
+  .gh-brand-desc-collapsed {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .gh-brand-readmore-btn {
+    display: inline-block;
+    margin-top: 6px;
+    color: #f37321;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .gh-brand-readmore-btn:hover {
+    color: #d95d0e;
+    text-decoration: underline;
+  }
+
+  /* --------------------------------------------------------------------------
+     2. SECTION HEADING: "Brand Products" WITH ACTIVE ORANGE BAR
+     -------------------------------------------------------------------------- */
+  .gh-brand-title-wrap {
+    text-align: center;
+    margin: 25px 0 32px 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .gh-brand-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    letter-spacing: -0.2px;
+  }
+
+  .gh-brand-title-bar {
+    display: block;
+    width: 46px;
+    height: 3px;
+    background: #f37321;
+    border-radius: 2px;
+    margin-top: 8px;
+  }
+
+  /* --------------------------------------------------------------------------
+     3. PRODUCT GRID: 4 COLUMNS DESKTOP, 3/2 TABLET, 2 MOBILE
+     -------------------------------------------------------------------------- */
+  .gh-brand-product-grid {
+    display: grid;
+    grid-template-columns: repeat({{ section.settings.columns_desktop | default: 4 }}, 1fr);
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  /* --------------------------------------------------------------------------
+     4. PAGINATION CONTROLS & RESULTS COUNT
+     -------------------------------------------------------------------------- */
+  .gh-brand-pagination-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 30px;
+    padding-top: 15px;
+  }
+
+  .gh-brand-pagination-list {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .gh-brand-page-item {
+    display: inline-flex;
+  }
+
+  .gh-brand-page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #4b5563;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .gh-brand-page-link:hover {
+    color: #f37321;
+    border-color: #f37321;
+    background: #fff8f3;
+  }
+
+  .gh-brand-page-link.is-active {
+    background: #f37321;
+    color: #ffffff;
+    border-color: #f37321;
+    font-weight: 700;
+  }
+
+  .gh-brand-page-arrow {
+    color: #6b7280;
+    font-size: 15px;
+  }
+
+  .gh-brand-page-arrow:hover {
+    color: #f37321;
+  }
+
+  .gh-brand-results-count {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  /* Empty State message */
+  .gh-brand-empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    background: #ffffff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    margin: 20px 0;
+  }
+
+  .gh-brand-empty-state p {
+    font-size: 15px;
+    color: #64748b;
+    margin: 0;
+  }
+
+  /* --------------------------------------------------------------------------
+     RESPONSIVE BREAKPOINTS
+     -------------------------------------------------------------------------- */
+  @media (max-width: 1199px) {
+    .gh-brand-product-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+  }
+
+  @media (max-width: 991px) {
+    .gh-brand-header {
+      gap: 20px;
+    }
+    .gh-brand-logo-box {
+      flex: 0 0 220px;
+      max-width: 220px;
+      height: 95px;
+    }
+    .gh-brand-product-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .gh-brand-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+      margin-bottom: 25px;
+    }
+    .gh-brand-logo-box {
+      width: 100%;
+      max-width: 100%;
+      height: 85px;
+      margin: 0 auto;
+    }
+    .gh-brand-logo-img {
+      max-height: 52px;
+    }
+    .gh-brand-desc-box {
+      font-size: 13.5px;
+      text-align: left;
+    }
+    .gh-brand-title-wrap {
+      margin: 18px 0 24px;
+    }
+    .gh-brand-title {
+      font-size: 19px;
+    }
+    .gh-brand-product-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+  }
+
+  @media (max-width: 479px) {
+    .gh-brand-product-grid {
+      gap: 10px 8px;
+    }
+  }
+
+  @media (max-width: 375px) {
+    .gh-brand-product-grid {
+      gap: 8px 6px;
+    }
+  }
+</style>
+
+<section class="gh-brand-section-wrap" id="ghBrandSection-{{ section.id }}">
+  <div class="container gh-brand-container-{{ section.id }}">
+
+    <!-- 1. TOP BRAND INFO (LOGO + DESCRIPTION) -->
+    {% if selected_collection != blank %}
+      {% if brand_logo != blank or brand_desc != blank or selected_collection.title != blank %}
+        <div class="gh-brand-header">
+          <!-- Left Logo Card -->
+          <div class="gh-brand-logo-box">
+            {% if brand_logo != blank %}
+              <img src="{{ brand_logo | image_url: width: 400 }}" alt="{{ selected_collection.title | escape }}" class="gh-brand-logo-img" loading="lazy">
+            {% else %}
+              <h3 class="gh-brand-logo-fallback">{{ selected_collection.title | escape }}</h3>
+            {% endif %}
+          </div>
+
+          <!-- Right Description with Read More -->
+          {% if brand_desc != blank %}
+            <div class="gh-brand-desc-box">
+              <div class="gh-brand-desc-text gh-brand-desc-collapsed js-brand-desc">
+                {{ brand_desc }}
+              </div>
+              <button type="button" class="gh-brand-readmore-btn js-brand-readmore" style="display: none;">
+                Read More
+              </button>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endif %}
+
+    <!-- 2. SECTION HEADING: "Brand Products" -->
+    {% if title != blank %}
+      <div class="gh-brand-title-wrap">
+        <h2 class="gh-brand-title">{{ title | escape }}</h2>
+        <span class="gh-brand-title-bar"></span>
+      </div>
+    {% endif %}
+
+    <!-- 3. PRODUCT GRID (100% DYNAMIC COLLECTION-WISE) -->
+    {% if selected_collection != blank %}
+      {% if selected_collection.products_count > 0 %}
+        {% paginate selected_collection.products by per_page %}
+          <div class="gh-brand-product-grid">
+            {% for product in selected_collection.products %}
+              {% render 'product-card', product: product %}
+            {% endfor %}
+          </div>
+
+          <!-- Dynamic Live Pagination -->
+          <div class="gh-brand-pagination-wrap">
+            {% if paginate.pages > 1 %}
+              <ul class="gh-brand-pagination-list">
+                {% if paginate.previous %}
+                  <li class="gh-brand-page-item">
+                    <a href="{{ paginate.previous.url }}" class="gh-brand-page-link gh-brand-page-arrow" aria-label="Previous page">&lsaquo;</a>
+                  </li>
+                {% endif %}
+
+                {% for part in paginate.parts %}
+                  <li class="gh-brand-page-item">
+                    {% if part.is_link %}
+                      <a href="{{ part.url }}" class="gh-brand-page-link">{{ part.title }}</a>
+                    {% else %}
+                      {% if part.title == paginate.current_page %}
+                        <span class="gh-brand-page-link is-active">{{ part.title }}</span>
+                      {% else %}
+                        <span class="gh-brand-page-link">{{ part.title }}</span>
+                      {% endif %}
+                    {% endif %}
+                  </li>
+                {% endfor %}
+
+                {% if paginate.next %}
+                  <li class="gh-brand-page-item">
+                    <a href="{{ paginate.next.url }}" class="gh-brand-page-link gh-brand-page-arrow" aria-label="Next page">&rsaquo;</a>
+                  </li>
+                {% endif %}
+              </ul>
+            {% endif %}
+
+            <p class="gh-brand-results-count">
+              Showing {{ paginate.current_offset | plus: 1 }} - {{ paginate.current_offset | plus: selected_collection.products.size }} of {{ paginate.items }} results
+            </p>
+          </div>
+        {% endpaginate %}
+
+      {% else %}
+        <div class="gh-brand-empty-state">
+          <p>এই কালেকশনে বর্তমানে কোনো প্রোডাক্ট পাওয়া যায়নি।</p>
+        </div>
+      {% endif %}
+
+    {% else %}
+      {% if request.design_mode %}
+        <div class="gh-brand-empty-state">
+          <p>⚠️ অনুগ্রহ করে থিম কাস্টমাইজার সেটিংস থেকে একটি কালেকশন সিলেক্ট করুন (Please select a collection in section settings).</p>
+        </div>
+      {% endif %}
+    {% endif %}
+
+  </div>
+</section>
+
+<script>
+  (function() {
+    const root = document.getElementById('ghBrandSection-{{ section.id }}');
+    if (!root) return;
+
+    // Read More / Read Less toggler
+    const descText = root.querySelector('.js-brand-desc');
+    const readMoreBtn = root.querySelector('.js-brand-readmore');
+
+    if (descText && readMoreBtn) {
+      // Check if text is long enough to warrant Read More
+      if (descText.scrollHeight > descText.clientHeight + 4) {
+        readMoreBtn.style.display = 'inline-block';
+      }
+
+      readMoreBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const isCollapsed = descText.classList.contains('gh-brand-desc-collapsed');
+        if (isCollapsed) {
+          descText.classList.remove('gh-brand-desc-collapsed');
+          readMoreBtn.textContent = 'Read Less';
+        } else {
+          descText.classList.add('gh-brand-desc-collapsed');
+          readMoreBtn.textContent = 'Read More';
+        }
+      });
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Brand Products Section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Collection Selection"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Select Collection",
+      "info": "Leave blank to automatically use current collection if used on collection pages"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Heading",
+      "default": "Brand Products"
+    },
+    {
+      "type": "header",
+      "content": "Optional Brand Overrides"
+    },
+    {
+      "type": "image_picker",
+      "id": "brand_logo",
+      "label": "Custom Brand Logo (Optional)",
+      "info": "Overrides collection image if selected"
+    },
+    {
+      "type": "richtext",
+      "id": "brand_description",
+      "label": "Custom Description (Optional)",
+      "info": "Overrides collection description if filled"
+    },
+    {
+      "type": "header",
+      "content": "Grid & Layout Settings"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "label": "Columns on Desktop",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "label": "Products Per Page",
+      "default": 20
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section Width",
+      "options": [
+        { "value": "container", "label": "Container (1320px)" },
+        { "value": "container-fluid", "label": "Fluid Container (1820px)" },
+        { "value": "narrow", "label": "Narrow Container (991px)" },
+        { "value": "full", "label": "Full Width (100%)" }
+      ],
+      "default": "container"
+    },
+    {
+      "type": "color",
+      "id": "section_bg",
+      "label": "Section Background",
+      "default": "#fafbfd"
+    },
+    {
+      "type": "header",
+      "content": "Section Spacing"
+    },
+    {
+      "type": "range",
+      "id": "margin_top",
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Top Spacing",
+      "default": 35
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom",
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "px",
+      "label": "Bottom Spacing",
+      "default": 50
+    }
+  ],
+  "presets": [
+    {
+      "name": "Brand Products Section",
+      "settings": {
+        "title": "Brand Products",
+        "columns_desktop": 4,
+        "products_per_page": 20
+      }
+    }
+  ]
+}
+{% endschema %}

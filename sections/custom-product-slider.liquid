@@ -1,0 +1,816 @@
+{% comment %}
+  =============================================================================
+  SHOPIFY REUSABLE PRODUCT SLIDER SECTION
+  - Grid Visibility: 5 items on Desktop (>1200px), 3 items on Tablet (768-1199px), 2 items on Mobile (<=767px)
+  - Uses Snippet: Renders 'product-card' for every product
+  - Header: Section title with orange active indicator bar + "VIEW ALL ITEMS →" link
+  - Controls: Touch swipe, mouse drag, centered pagination dots & floating circular arrow buttons
+  - Multi-instance ready: Can be reused across any page with different collections
+  =============================================================================
+{% endcomment %}
+
+{% liquid
+  assign coll = section.settings.collection
+  assign title = section.settings.title
+  if title == blank
+    if coll != blank
+      assign title = coll.title
+    else
+      assign title = 'All Natural Honey'
+    endif
+  endif
+
+  assign view_all_link = section.settings.view_all_link
+  if view_all_link == blank and coll != blank
+    assign view_all_link = coll.url
+  elsif view_all_link == blank
+    assign view_all_link = '/collections/all'
+  endif
+
+  assign section_width_setting = section.settings.section_width | default: 'container'
+  case section_width_setting
+    when 'container-fluid'
+      assign section_max_w = '1820px'
+    when 'narrow'
+      assign section_max_w = '991px'
+    when 'full'
+      assign section_max_w = '100%'
+    else
+      assign section_max_w = 'var(--container-max-width, 80%)'
+  endcase
+  assign products_to_show = section.settings.products_to_show | default: 10
+  assign autoplay = section.settings.autoplay
+  assign autoplay_speed = section.settings.autoplay_speed | default: 4 | times: 1000
+%}
+
+<style>
+  #shopify-section-{{ section.id }} {
+    --section-max-width: {{ section_max_w }};
+  }
+  {% if section_width_setting == 'container' or section_width_setting == blank %}
+    @media (max-width: 1600px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 95%;
+      }
+    }
+    @media (max-width: 479px) {
+      #shopify-section-{{ section.id }} {
+        --section-max-width: 100%;
+      }
+    }
+  {% endif %}
+
+  #shopify-section-{{ section.id }} .gh-pslider-section {
+    width: 100%;
+    max-width: var(--section-max-width);
+    margin: 42px auto 36px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  #shopify-section-{{ section.id }} * {
+    box-sizing: border-box;
+  }
+
+  /* Header with Bottom Border and Active Orange Bar */
+  .gh-pslider-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #edf0f3;
+    padding-bottom: 14px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .gh-pslider-title-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding-bottom: 14px;
+    margin-bottom: -15px;
+  }
+
+  .gh-pslider-title {
+    font-size: {{ section.settings.heading_size | default: 22 }}px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.2px;
+  }
+
+  .gh-pslider-title-wrap::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+    background: #f37321;
+    border-radius: 2px 2px 0 0;
+  }
+
+  /* View All Link */
+  .gh-pslider-view-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #f37321;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+
+  .gh-pslider-view-all:hover {
+    color: #e06110;
+  }
+
+  .gh-pslider-view-all svg {
+    width: 15px;
+    height: 15px;
+    stroke-width: 2.2;
+    transition: transform 0.2s ease;
+  }
+
+  .gh-pslider-view-all:hover svg {
+    transform: translateX(3px);
+  }
+
+  /* Slider Main Wrapper */
+  .gh-pslider-container {
+    position: relative;
+    width: 100%;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .gh-pslider-viewport {
+    overflow: hidden;
+    width: 100%;
+    border-radius: 12px;
+    cursor: grab;
+    touch-action: pan-y;
+  }
+
+  .gh-pslider-viewport.is-dragging {
+    cursor: grabbing;
+  }
+
+  .gh-pslider-track {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+  }
+
+  /* --------------------------------------------------------------------------
+     RESPONSIVE ITEM WIDTHS (Desktop 5, Laptop 4, Tablet 3, Mobile 2)
+     -------------------------------------------------------------------------- */
+  /* Desktop (> 1199px): 5 items */
+  .gh-pslider-slide {
+    flex: 0 0 calc((100% - 4 * 16px) / 5);
+    min-width: 0;
+    box-sizing: border-box;
+    display: flex;
+  }
+
+  /* Breakpoint 1: Large desktop (1199px and below): 4 items */
+  @media (max-width: 1199px) {
+    .gh-pslider-track {
+      gap: 14px;
+    }
+    .gh-pslider-slide {
+      flex: 0 0 calc((100% - 3 * 14px) / 4);
+    }
+  }
+
+  /* Breakpoint 2: Desktop / Laptop (991px and below): 3 items */
+  @media (max-width: 991px) {
+    .gh-pslider-track {
+      gap: 12px;
+    }
+    .gh-pslider-slide {
+      flex: 0 0 calc((100% - 2 * 12px) / 3);
+    }
+    .gh-pslider-title {
+      font-size: 2rem;
+    }
+  }
+
+  /* Breakpoint 3: Tablet (767px and below): 2 items (50%) */
+  @media (max-width: 767px) {
+    .gh-pslider-head {
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+    .gh-pslider-title {
+      font-size: 1.8rem;
+    }
+    .gh-pslider-title-wrap {
+      padding-bottom: 12px;
+      margin-bottom: -13px;
+    }
+    .gh-pslider-view-all {
+      font-size: 1.15rem;
+    }
+    .gh-pslider-track {
+      gap: 10px;
+    }
+    .gh-pslider-slide {
+      flex: 0 0 calc((100% - 10px) / 2);
+    }
+  }
+
+  /* Breakpoint 4: Large mobile (575px and below) */
+  @media (max-width: 575px) {
+    .gh-pslider-arrow {
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  /* Breakpoint 5: Small mobile (479px and below): Container padding 12px */
+  @media (max-width: 479px) {
+    #shopify-section-{{ section.id }} .gh-pslider-section {
+      padding-left: 12px;
+      padding-right: 12px;
+      margin: 30px auto 24px;
+    }
+    .gh-pslider-slide {
+      flex: 0 0 calc((100% - 8px) / 2);
+    }
+    .gh-pslider-track {
+      gap: 8px;
+    }
+  }
+
+  /* Breakpoint 6: Extra small mobile (375px and below) */
+  @media (max-width: 375px) {
+    #shopify-section-{{ section.id }} .gh-pslider-section {
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+  }
+
+  /* Navigation Arrows (Circular Orange Floating Buttons) */
+  .gh-pslider-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #f37321;
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 3px 12px rgba(243, 115, 33, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.2s, transform 0.2s, opacity 0.2s;
+    outline: none;
+  }
+
+  .gh-pslider-arrow:hover {
+    background: #e06110;
+    transform: translateY(-50%) scale(1.08);
+  }
+
+  .gh-pslider-arrow:active {
+    transform: translateY(-50%) scale(0.95);
+  }
+
+  .gh-pslider-arrow.prev {
+    left: -16px;
+  }
+
+  .gh-pslider-arrow.next {
+    right: -16px;
+  }
+
+  .gh-pslider-arrow.is-disabled {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .gh-pslider-arrow svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.5;
+  }
+
+  /* Pagination Dots */
+  .gh-pslider-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .gh-pslider-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid #f37321;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.25s ease;
+    outline: none;
+  }
+
+  .gh-pslider-dot.is-active {
+    background: #f37321;
+    border-color: #f37321;
+    transform: scale(1.15);
+  }
+</style>
+
+<div class="container gh-pslider-section" id="ghProductSlider-{{ section.id }}">
+  <!-- Header -->
+  <div class="gh-pslider-head">
+    <div class="gh-pslider-title-wrap">
+      <h3 class="gh-pslider-title">{{ title | escape }}</h3>
+    </div>
+
+    {% if section.settings.show_view_all %}
+      <a href="{{ view_all_link }}" class="gh-pslider-view-all">
+        <span>{{ section.settings.view_all_text | default: 'VIEW ALL ITEMS' | escape }}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- Slider Wrapper -->
+  <div class="gh-pslider-container">
+    <!-- Prev Arrow -->
+    <button type="button" class="gh-pslider-arrow prev is-disabled js-pslider-prev" aria-label="Previous Products">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+    </button>
+
+    <!-- Viewport & Track -->
+    <div class="gh-pslider-viewport js-pslider-viewport">
+      <div class="gh-pslider-track js-pslider-track">
+
+        {% if coll != blank and coll.products.size > 0 %}
+          {% for prod in coll.products limit: products_to_show %}
+            <div class="gh-pslider-slide">
+              {% render 'product-card', product: prod %}
+            </div>
+          {% endfor %}
+        {% else %}
+          <!-- 5 DEMO PRODUCTS MATCHING EXACT USER SCREENSHOT (FALLBACK) -->
+          <!-- 1. Black Seed Honey 500g -->
+          <div class="gh-pslider-slide">
+            {% render 'product-card',
+              demo_id: 'demo-honey-1',
+              demo_variant_id: 'demo-v-h1',
+              demo_title: 'Black Seed Honey 500g',
+              demo_price: '৳800',
+              demo_img: 'https://backoffice.ghorerbazar.com/category_images/KbWCe1774766391.png'
+            %}
+          </div>
+
+          <!-- 2. Lychee Flower Honey 500g -->
+          <div class="gh-pslider-slide">
+            {% render 'product-card',
+              demo_id: 'demo-honey-2',
+              demo_variant_id: 'demo-v-h2',
+              demo_title: 'Lychee Flower Honey 500g',
+              demo_price: '৳700',
+              demo_img: 'https://backoffice.ghorerbazar.com/category_images/KbWCe1774766391.png'
+            %}
+          </div>
+
+          <!-- 3. Kashmiri Sidr Honey 800g (New Arrival) -->
+          <div class="gh-pslider-slide">
+            {% render 'product-card',
+              demo_id: 'demo-honey-3',
+              demo_variant_id: 'demo-v-h3',
+              demo_title: 'Kashmiri Sidr Honey 800g',
+              demo_price: '৳2,000',
+              custom_badge: 'New Arrival',
+              demo_img: 'https://backoffice.ghorerbazar.com/category_images/KbWCe1774766391.png'
+            %}
+          </div>
+
+          <!-- 4. Lychee Flower Honey 1kg -->
+          <div class="gh-pslider-slide">
+            {% render 'product-card',
+              demo_id: 'demo-honey-4',
+              demo_variant_id: 'demo-v-h4',
+              demo_title: 'Lychee Flower Honey 1kg',
+              demo_price: '৳1,400',
+              demo_img: 'https://backoffice.ghorerbazar.com/category_images/KbWCe1774766391.png'
+            %}
+          </div>
+
+          <!-- 5. Sundarban Honey 15g X 24 pcs (BOX) (New Arrival) -->
+          <div class="gh-pslider-slide">
+            {% render 'product-card',
+              demo_id: 'demo-honey-5',
+              demo_variant_id: 'demo-v-h5',
+              demo_title: 'Sundarban Honey 15g X 24 pcs (BOX)',
+              demo_price: '৳768',
+              custom_badge: 'New Arrival',
+              demo_img: 'https://backoffice.ghorerbazar.com/category_images/KbWCe1774766391.png'
+            %}
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- Next Arrow -->
+    <button type="button" class="gh-pslider-arrow next js-pslider-next" aria-label="Next Products">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </button>
+
+    <!-- Pagination Dots -->
+    <div class="gh-pslider-pagination js-pslider-pagination"></div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const root = document.getElementById('ghProductSlider-{{ section.id }}');
+    if (!root) return;
+
+    const viewport = root.querySelector('.js-pslider-viewport');
+    const track = root.querySelector('.js-pslider-track');
+    const pagination = root.querySelector('.js-pslider-pagination');
+    const prevBtn = root.querySelector('.js-pslider-prev');
+    const nextBtn = root.querySelector('.js-pslider-next');
+    if (!viewport || !track) return;
+
+    const slides = track.querySelectorAll('.gh-pslider-slide');
+    if (slides.length === 0) return;
+
+    let currentTranslate = 0;
+    let autoplayTimer = null;
+    const isAutoplay = {{ autoplay | json }};
+    const autoplaySpeed = {{ autoplay_speed }};
+
+    function getStepSize() {
+      if (slides.length <= 1) return 0;
+      const s0 = slides[0].getBoundingClientRect();
+      const s1 = slides[1].getBoundingClientRect();
+      return s1.left - s0.left;
+    }
+
+    function getMaxTranslate() {
+      const totalTrackWidth = track.scrollWidth;
+      const viewportWidth = viewport.offsetWidth;
+      return Math.max(0, totalTrackWidth - viewportWidth);
+    }
+
+    function updateArrows() {
+      const maxTrans = getMaxTranslate();
+      if (maxTrans <= 4) {
+        if (prevBtn) prevBtn.classList.add('is-disabled');
+        if (nextBtn) nextBtn.classList.add('is-disabled');
+        return;
+      }
+      if (prevBtn) {
+        if (currentTranslate <= 4) prevBtn.classList.add('is-disabled');
+        else prevBtn.classList.remove('is-disabled');
+      }
+      if (nextBtn) {
+        if (currentTranslate >= maxTrans - 4) nextBtn.classList.add('is-disabled');
+        else nextBtn.classList.remove('is-disabled');
+      }
+    }
+
+    function buildPagination() {
+      if (!pagination) return;
+      pagination.innerHTML = '';
+
+      const maxTrans = getMaxTranslate();
+      const step = getStepSize();
+      if (maxTrans <= 5 || step <= 0) {
+        pagination.style.display = 'none';
+        return;
+      }
+      pagination.style.display = 'flex';
+
+      const totalDots = Math.ceil(maxTrans / step) + 1;
+
+      for (let i = 0; i < totalDots; i++) {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'gh-pslider-dot' + (i === 0 ? ' is-active' : '');
+        dot.setAttribute('aria-label', 'Go to product slide ' + (i + 1));
+        dot.addEventListener('click', () => {
+          scrollToTranslate(Math.min(i * step, maxTrans), true);
+          resetAutoplay();
+        });
+        pagination.appendChild(dot);
+      }
+    }
+
+    function updateDots() {
+      if (!pagination) return;
+      const dots = pagination.querySelectorAll('.gh-pslider-dot');
+      if (dots.length === 0) return;
+
+      const step = getStepSize();
+      if (step <= 0) return;
+
+      let activeIndex = Math.round(currentTranslate / step);
+      activeIndex = Math.max(0, Math.min(activeIndex, dots.length - 1));
+
+      dots.forEach((dot, idx) => {
+        if (idx === activeIndex) dot.classList.add('is-active');
+        else dot.classList.remove('is-active');
+      });
+    }
+
+    function scrollToTranslate(target, smooth) {
+      const maxTrans = getMaxTranslate();
+      currentTranslate = Math.max(0, Math.min(target, maxTrans));
+      track.style.transition = smooth ? 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
+      track.style.transform = `translateX(-${currentTranslate}px)`;
+      updateDots();
+      updateArrows();
+    }
+
+    // Arrows click
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        const step = getStepSize();
+        const maxTrans = getMaxTranslate();
+        if (currentTranslate >= maxTrans - 4) {
+          scrollToTranslate(0, true);
+        } else {
+          scrollToTranslate(currentTranslate + step, true);
+        }
+        resetAutoplay();
+      });
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        const step = getStepSize();
+        const maxTrans = getMaxTranslate();
+        if (currentTranslate <= 4) {
+          scrollToTranslate(maxTrans, true);
+        } else {
+          scrollToTranslate(currentTranslate - step, true);
+        }
+        resetAutoplay();
+      });
+    }
+
+    // Autoplay logic
+    function startAutoplay() {
+      if (!isAutoplay) return;
+      stopAutoplay();
+      autoplayTimer = setInterval(() => {
+        const step = getStepSize();
+        const maxTrans = getMaxTranslate();
+        if (currentTranslate >= maxTrans - 5) {
+          scrollToTranslate(0, true);
+        } else {
+          scrollToTranslate(currentTranslate + step, true);
+        }
+      }, autoplaySpeed);
+    }
+
+    function stopAutoplay() {
+      if (autoplayTimer) {
+        clearInterval(autoplayTimer);
+        autoplayTimer = null;
+      }
+    }
+
+    function resetAutoplay() {
+      stopAutoplay();
+      startAutoplay();
+    }
+
+    viewport.addEventListener('mouseenter', stopAutoplay);
+    viewport.addEventListener('mouseleave', startAutoplay);
+
+    // Mouse Drag & Touch Swipe
+    let isDragging = false;
+    let startX = 0;
+    let dragStartTranslate = 0;
+    let diffX = 0;
+    let isMoved = false;
+
+    viewport.addEventListener('dragstart', e => e.preventDefault());
+    track.addEventListener('dragstart', e => e.preventDefault());
+
+    function onPointerDown(e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (e.target.closest('button') || e.target.closest('.gh-pcard-actions')) return;
+
+      isDragging = true;
+      isMoved = false;
+      startX = e.clientX;
+      dragStartTranslate = currentTranslate;
+      diffX = 0;
+
+      stopAutoplay();
+      track.style.transition = 'none';
+      viewport.classList.add('is-dragging');
+
+      /* FIX: removed viewport.setPointerCapture() here.
+         Capturing the pointer on the viewport was redirecting the
+         resulting "click" event's target away from the product card
+         link in some browsers, which stopped the browser's default
+         navigation action from firing - i.e. clicking a product card
+         never opened the product page. We already listen on window
+         for pointermove/pointerup, so capture isn't needed at all. */
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+      if (!isDragging) return;
+      diffX = e.clientX - startX;
+      /* FIX: raised threshold from 6px to 12px so ordinary hand
+         tremor while clicking a card isn't misread as a drag. */
+      if (Math.abs(diffX) > 12) isMoved = true;
+
+      const maxTrans = getMaxTranslate();
+      let target = dragStartTranslate - diffX;
+
+      if (target < 0) target = target * 0.3;
+      else if (target > maxTrans) target = maxTrans + (target - maxTrans) * 0.3;
+
+      track.style.transform = `translateX(-${target}px)`;
+    }
+
+    function onPointerUp(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      viewport.classList.remove('is-dragging');
+
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+
+      const step = getStepSize();
+      let targetTranslate = dragStartTranslate;
+
+      if (step > 0) {
+        if (diffX < -30) {
+          const count = Math.max(1, Math.round(Math.abs(diffX) / step));
+          targetTranslate = dragStartTranslate + (count * step);
+        } else if (diffX > 30) {
+          const count = Math.max(1, Math.round(diffX / step));
+          targetTranslate = dragStartTranslate - (count * step);
+        } else {
+          targetTranslate = Math.round((dragStartTranslate - diffX) / step) * step;
+        }
+      }
+
+      scrollToTranslate(targetTranslate, true);
+      diffX = 0;
+      startAutoplay();
+    }
+
+    viewport.addEventListener('pointerdown', onPointerDown);
+
+    track.addEventListener('click', e => {
+      if (isMoved) {
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(() => { isMoved = false; }, 60);
+      }
+    }, true);
+
+    window.addEventListener('resize', () => {
+      buildPagination();
+      const step = getStepSize();
+      const maxTrans = getMaxTranslate();
+      if (step > 0) {
+        currentTranslate = Math.min(Math.round(currentTranslate / step) * step, maxTrans);
+      } else {
+        currentTranslate = 0;
+      }
+      scrollToTranslate(currentTranslate, false);
+      updateArrows();
+    });
+
+    buildPagination();
+    updateArrows();
+    startAutoplay();
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Product Slider",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Collection Settings"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Select Collection"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section Heading",
+      "info": "Leave blank to use Collection Title"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 18,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "label": "Heading Font Size",
+      "default": 22
+    },
+    {
+      "type": "checkbox",
+      "id": "show_view_all",
+      "label": "Show 'View All' Link",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "view_all_text",
+      "label": "'View All' Text",
+      "default": "VIEW ALL ITEMS"
+    },
+    {
+      "type": "url",
+      "id": "view_all_link",
+      "label": "'View All' Link",
+      "info": "Leave blank to link directly to collection page"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "min": 5,
+      "max": 25,
+      "step": 1,
+      "label": "Products to Show",
+      "default": 10
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section Width",
+      "options": [
+        { "value": "container", "label": "Container (1320px)" },
+        { "value": "container-fluid", "label": "Fluid Container (1820px)" },
+        { "value": "narrow", "label": "Narrow Container (991px)" },
+        { "value": "full", "label": "Full Width (100%)" }
+      ],
+      "default": "container"
+    },
+    {
+      "type": "header",
+      "content": "Slider Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Enable Autoplay",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "unit": "s",
+      "label": "Autoplay Interval",
+      "default": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "Featured Product Slider"
+    }
+  ]
+}
+{% endschema %}

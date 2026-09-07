@@ -1,0 +1,482 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "custom_hero_34xF4j": {
+      "type": "custom-hero",
+      "blocks": {
+        "slide_zqpiy7": {
+          "type": "slide",
+          "settings": {
+            "link": "",
+            "alt_text": "Offer Banner"
+          }
+        },
+        "slide_W8cHzg": {
+          "type": "slide",
+          "settings": {
+            "link": "",
+            "alt_text": "Offer Banner"
+          }
+        },
+        "slide_UdkJky": {
+          "type": "slide",
+          "settings": {
+            "link": "",
+            "alt_text": "Offer Banner"
+          }
+        }
+      },
+      "block_order": [
+        "slide_zqpiy7",
+        "slide_W8cHzg",
+        "slide_UdkJky"
+      ],
+      "name": "Hero Slideshow & Banner",
+      "settings": {
+        "desktop_height": 372,
+        "image_fit": "cover",
+        "mobile_aspect_ratio": "adapt",
+        "mobile_height": 220,
+        "container_max_width": 95,
+        "autoplay": true,
+        "autoplay_speed": 5,
+        "show_arrows": true,
+        "show_dots": true,
+        "right_banner_link": "",
+        "right_banner_alt": "Promo Banner"
+      }
+    },
+    "custom_categories_Fhd8ig": {
+      "type": "custom-categories",
+      "blocks": {
+        "category_4naHFb": {
+          "type": "category",
+          "settings": {
+            "collection": "frontpage",
+            "title": "Organic",
+            "link": ""
+          }
+        },
+        "category_WBXNMD": {
+          "type": "category",
+          "settings": {
+            "collection": "",
+            "title": "Honey",
+            "link": ""
+          }
+        },
+        "category_FgRwBH": {
+          "type": "category",
+          "settings": {
+            "collection": "",
+            "title": "Dates",
+            "link": ""
+          }
+        },
+        "category_6U9dwq": {
+          "type": "category",
+          "settings": {
+            "collection": "",
+            "title": "Spices",
+            "link": ""
+          }
+        },
+        "category_X3UKHa": {
+          "type": "category",
+          "settings": {
+            "collection": "",
+            "title": "Nuts & Seeds",
+            "link": ""
+          }
+        },
+        "category_3xdgyB": {
+          "type": "category",
+          "settings": {
+            "collection": "",
+            "title": "Beverage",
+            "link": ""
+          }
+        },
+        "category_HCL3i4": {
+          "type": "category",
+          "settings": {
+            "collection": "",
+            "title": "Rice",
+            "link": ""
+          }
+        },
+        "category_UVwAa7": {
+          "type": "category",
+          "settings": {
+            "collection": "",
+            "title": "Flours & Lentils",
+            "link": ""
+          }
+        },
+        "category_CtpgBx": {
+          "type": "category",
+          "settings": {
+            "collection": "",
+            "title": "Oil & Ghee",
+            "link": ""
+          }
+        },
+        "category_ADxjPk": {
+          "type": "category",
+          "settings": {
+            "collection": "",
+            "title": "Functional Food",
+            "link": ""
+          }
+        }
+      },
+      "block_order": [
+        "category_4naHFb",
+        "category_WBXNMD",
+        "category_FgRwBH",
+        "category_6U9dwq",
+        "category_X3UKHa",
+        "category_3xdgyB",
+        "category_HCL3i4",
+        "category_UVwAa7",
+        "category_CtpgBx",
+        "category_ADxjPk"
+      ],
+      "name": "Custom Featured Categories",
+      "settings": {
+        "title": "Featured Categories",
+        "heading_size": 24,
+        "container_max_width": 95,
+        "items_desktop": 8,
+        "card_bg": "rgba(0,0,0,0)",
+        "card_radius": 18,
+        "autoplay": true,
+        "autoplay_speed": 4
+      }
+    },
+    "top_selling_rfQBKY": {
+      "type": "top-selling",
+      "blocks": {
+        "product_item_BWDjdm": {
+          "type": "product_item",
+          "settings": {
+            "product": "deshi-mustard-oil-5-liter",
+            "custom_title": "",
+            "custom_price": ""
+          }
+        },
+        "product_item_4PzanW": {
+          "type": "product_item",
+          "settings": {
+            "product": "deshi-mustard-oil-5-liter",
+            "custom_title": "",
+            "custom_price": ""
+          }
+        },
+        "product_item_nTcwdk": {
+          "type": "product_item",
+          "settings": {
+            "product": "deshi-mustard-oil-5-liter",
+            "custom_title": "",
+            "custom_price": ""
+          }
+        },
+        "product_item_rw8BcN": {
+          "type": "product_item",
+          "settings": {
+            "product": "deshi-mustard-oil-5-liter",
+            "custom_title": "",
+            "custom_price": ""
+          }
+        }
+      },
+      "block_order": [
+        "product_item_BWDjdm",
+        "product_item_4PzanW",
+        "product_item_nTcwdk",
+        "product_item_rw8BcN"
+      ],
+      "name": "Top Selling Products",
+      "settings": {
+        "title": "Top Selling Products",
+        "heading_size": 24,
+        "badge_text": "Best Selling",
+        "container_max_width": 95,
+        "collection": ""
+      }
+    },
+    "custom_brands_zaKqgy": {
+      "type": "custom-brands",
+      "blocks": {
+        "brand_item_Mwcd7d": {
+          "type": "brand_item",
+          "settings": {
+            "image": "shopify://shop_images/7hNKq1768887947.png",
+            "brand_name": "Brand Name",
+            "link": ""
+          }
+        },
+        "brand_item_dCUKEc": {
+          "type": "brand_item",
+          "settings": {
+            "image": "shopify://shop_images/RNTIU1763611802.png",
+            "brand_name": "Brand Name",
+            "link": ""
+          }
+        },
+        "brand_item_mt7pa7": {
+          "type": "brand_item",
+          "settings": {
+            "image": "shopify://shop_images/8Gpl21757919440.png",
+            "brand_name": "Brand Name",
+            "link": ""
+          }
+        },
+        "brand_item_CACphR": {
+          "type": "brand_item",
+          "settings": {
+            "image": "shopify://shop_images/lCfRt1759553456.png",
+            "brand_name": "Brand Name",
+            "link": ""
+          }
+        },
+        "brand_item_cJCjWj": {
+          "type": "brand_item",
+          "settings": {
+            "image": "shopify://shop_images/8Gpl21757919440.png",
+            "brand_name": "Brand Name",
+            "link": ""
+          }
+        }
+      },
+      "block_order": [
+        "brand_item_Mwcd7d",
+        "brand_item_dCUKEc",
+        "brand_item_mt7pa7",
+        "brand_item_CACphR",
+        "brand_item_cJCjWj"
+      ],
+      "name": "Our Brands",
+      "settings": {
+        "title": "Our Brands",
+        "heading_size": 22,
+        "show_see_all": true,
+        "see_all_text": "SEE ALL",
+        "see_all_link": "",
+        "container_max_width": 95,
+        "card_height": 135,
+        "autoplay": false,
+        "autoplay_speed": 4
+      }
+    },
+    "custom_product_slider_FAEmJt": {
+      "type": "custom-product-slider",
+      "name": "Featured Product Slider",
+      "settings": {
+        "collection": "frontpage",
+        "title": "All Natural Honey",
+        "heading_size": 22,
+        "show_view_all": true,
+        "view_all_text": "VIEW ALL ITEMS",
+        "view_all_link": "",
+        "products_to_show": 10,
+        "container_max_width": 95,
+        "autoplay": false,
+        "autoplay_speed": 4
+      }
+    },
+    "custom_product_slider_Jeghaf": {
+      "type": "custom-product-slider",
+      "name": "Featured Product Slider",
+      "settings": {
+        "collection": "frontpage",
+        "title": "Premium Dates",
+        "heading_size": 22,
+        "show_view_all": true,
+        "view_all_text": "VIEW ALL ITEMS",
+        "view_all_link": "",
+        "products_to_show": 10,
+        "container_max_width": 95,
+        "autoplay": false,
+        "autoplay_speed": 4
+      }
+    },
+    "custom_image_banner_wBK9jh": {
+      "type": "custom-image-banner",
+      "name": "Responsive Image Banner",
+      "settings": {
+        "image": "shopify://shop_images/KQlqd1788006502-4000x1039.jpg",
+        "demo_image_url": "",
+        "alt_text": "Promotional Banner",
+        "desktop_height": 345,
+        "tablet_height": 225,
+        "mobile_height": 150,
+        "image_fit": "cover",
+        "image_position": "center center",
+        "banner_link": "shopify://pages/brand-products",
+        "open_in_new_tab": false,
+        "enable_hover_zoom": true,
+        "container_type": "contained",
+        "container_width": 95,
+        "border_radius": 20,
+        "mobile_border_radius": 12,
+        "enable_shadow": false,
+        "banner_bg": "#f4f5f7",
+        "margin_top": 25,
+        "margin_bottom": 25
+      }
+    },
+    "custom_product_slider_M7cVHc": {
+      "type": "custom-product-slider",
+      "name": "Featured Product Slider",
+      "settings": {
+        "collection": "frontpage",
+        "title": "Cooking Essentials",
+        "heading_size": 22,
+        "show_view_all": true,
+        "view_all_text": "VIEW ALL ITEMS",
+        "view_all_link": "",
+        "products_to_show": 10,
+        "container_max_width": 95,
+        "autoplay": false,
+        "autoplay_speed": 4
+      }
+    },
+    "custom_product_slider_HTJLAm": {
+      "type": "custom-product-slider",
+      "name": "Featured Product Slider",
+      "settings": {
+        "collection": "frontpage",
+        "title": "Organic Certified",
+        "heading_size": 22,
+        "show_view_all": true,
+        "view_all_text": "VIEW ALL ITEMS",
+        "view_all_link": "",
+        "products_to_show": 10,
+        "container_max_width": 95,
+        "autoplay": false,
+        "autoplay_speed": 4
+      }
+    },
+    "custom_just_for_you_whBxtt": {
+      "type": "custom-just-for-you",
+      "name": "Just For You Section",
+      "settings": {
+        "collection": "frontpage",
+        "title": "Just For You",
+        "heading_size": 22,
+        "show_view_all": true,
+        "view_all_text": "VIEW ALL PRODUCTS",
+        "view_all_url": "",
+        "initial_count": 8,
+        "load_more_step": 8,
+        "max_total_products": 48,
+        "load_more_text": "LOAD MORE",
+        "container_width": 95,
+        "section_bg": "#ffffff",
+        "margin_top": 35,
+        "margin_bottom": 45
+      }
+    },
+    "custom_testimonials_fNaRKx": {
+      "type": "custom-testimonials",
+      "blocks": {
+        "testimonial_NareqU": {
+          "type": "testimonial",
+          "settings": {
+            "review_text": "আমি একজন ঘরের বাজারের নিয়মিত কাস্টমার। আমি শুধু ঘরের বাজার থেকে এই যে প্রোডাক্ট আনি এমন নয়। আমি অনেক জায়গা থেকে এই প্রোডাক্ট এনেছি। তবে আমার মতে এসব পেজ থেকে ঘরের বাজার সেরা।",
+            "rating": 5,
+            "author_name": "Ahmod Al Kamran",
+            "author_role": "Student",
+            "author_image_url": "https://backoffice.ghorerbazar.com/testimonial/NgeCj1758183204.jpg"
+          }
+        },
+        "testimonial_UtxmrM": {
+          "type": "testimonial",
+          "settings": {
+            "review_text": "I don’t like ghee, but my father really loves it. So I bought some ghee for him. He said this ghee is the best he has ever had",
+            "rating": 5,
+            "author_name": "Shahriar Khan Abir",
+            "author_role": "Service Holder",
+            "author_image_url": "https://backoffice.ghorerbazar.com/testimonial/7XD7v1758183150.jpg"
+          }
+        },
+        "testimonial_fKVXft": {
+          "type": "testimonial",
+          "settings": {
+            "review_text": "এই অবিশ্বাসের জগতে আস্থাশীল একটি প্রতিষ্ঠান ঘরের বাজার।",
+            "rating": 5,
+            "author_name": "Fariha Akter Tumpa",
+            "author_role": "Entrepreneur",
+            "author_image_url": "https://backoffice.ghorerbazar.com/testimonial/PZDyt1758183005.jpg"
+          }
+        },
+        "testimonial_hQHFYr": {
+          "type": "testimonial",
+          "settings": {
+            "review_text": "২য় বার Ghorerbazar থেকে অর্ডার করলাম। আগের মতো এবারও দারুণ কোয়ালিটি আর দ্রুত ডেলিভারি পেয়েছি। একদম সন্তুষ্ট।",
+            "rating": 5,
+            "author_name": "Ayesha Khan",
+            "author_role": "Banker",
+            "author_image_url": "https://backoffice.ghorerbazar.com/testimonial/0Jti61758182944.png"
+          }
+        },
+        "testimonial_gJ8xYx": {
+          "type": "testimonial",
+          "settings": {
+            "review_text": "Thanks Ghorerbazar for free Honeyraj. Of course, I got it for being a regular customer.",
+            "rating": 5,
+            "author_name": "Sultana Yesmin",
+            "author_role": "Housewife",
+            "author_image_url": "https://backoffice.ghorerbazar.com/testimonial/3qPit1758182893.jpg"
+          }
+        }
+      },
+      "block_order": [
+        "testimonial_NareqU",
+        "testimonial_UtxmrM",
+        "testimonial_fKVXft",
+        "testimonial_hQHFYr",
+        "testimonial_gJ8xYx"
+      ],
+      "name": "Customer Testimonials",
+      "settings": {
+        "title": "",
+        "subtitle": "",
+        "heading_align": "left",
+        "heading_size": 24,
+        "container_width": 95,
+        "section_bg": "#fafbfd",
+        "card_bg": "#ffffff",
+        "card_border": "#eaedf1",
+        "border_radius": 16,
+        "star_color": "#f59e0b",
+        "autoplay": false,
+        "autoplay_speed": 4,
+        "margin_top": 40,
+        "margin_bottom": 45
+      }
+    }
+  },
+  "order": [
+    "custom_hero_34xF4j",
+    "custom_categories_Fhd8ig",
+    "top_selling_rfQBKY",
+    "custom_brands_zaKqgy",
+    "custom_product_slider_FAEmJt",
+    "custom_product_slider_Jeghaf",
+    "custom_image_banner_wBK9jh",
+    "custom_product_slider_M7cVHc",
+    "custom_product_slider_HTJLAm",
+    "custom_just_for_you_whBxtt",
+    "custom_testimonials_fNaRKx"
+  ]
+}
