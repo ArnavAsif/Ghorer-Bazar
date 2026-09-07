@@ -27,6 +27,12 @@
   if rec_collection == blank or rec_collection.products_count == 0
     assign rec_collection = collections.first
   endif
+
+  assign more_about_url = section.settings.more_about_us_url | default: '/pages/about-us'
+  assign more_wishlist_url = section.settings.more_wishlist_url | default: section.settings.wishlist_url | default: '/pages/wishlist'
+  assign more_faq_url = section.settings.more_faq_url | default: '/pages/faq'
+  assign more_call_val = section.settings.more_phone_number | default: section.settings.phone_number | default: '+8809642922922'
+  assign more_wa_val = section.settings.more_whatsapp_number | default: section.settings.whatsapp_number | default: '+8801321208940'
 %}
 
 <style>
@@ -125,7 +131,8 @@
 
   .gh-search-form {
     flex: 1;
-    max-width: 580px;
+    max-width: 44.6rem;
+    width: 100%;
     position: relative;
   }
 
@@ -139,20 +146,41 @@
   .gh-search-input {
     width: 100%;
     height: 42px;
-    background: #f3f4f6;
-    border: 1px solid transparent;
-    border-radius: 999px;
-    padding: 0 45px 0 20px;
+    background: #ffffff;
+    border: 1px solid #d5d9df;
+    border-radius: 8px;
+    padding: 0 45px 0 16px;
     font-size: 14px;
     color: var(--gh-text-dark);
     outline: none;
-    transition: all 0.25s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .gh-search-input::-webkit-search-decoration,
+  .gh-search-input::-webkit-search-cancel-button,
+  .gh-search-input::-webkit-search-results-button,
+  .gh-search-input::-webkit-search-results-decoration {
+    -webkit-appearance: none !important;
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .gh-search-input::-ms-clear,
+  .gh-search-input::-ms-reveal {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 
   .gh-search-input:focus {
     background: #ffffff;
-    border-color: #d1d5db;
-    box-shadow: 0 0 0 3px rgba(243, 115, 33, 0.12);
+    border-color: var(--gh-accent, #f37321);
+    box-shadow: 0 0 0 1px var(--gh-accent, #f37321);
   }
 
   .gh-search-btn {
@@ -170,9 +198,156 @@
     cursor: pointer;
     color: #4b5563;
     border-radius: 50%;
+    transition: color 0.15s ease;
   }
 
+  .gh-search-btn:hover { color: var(--gh-accent, #f37321); }
   .gh-search-btn svg { width: 18px; height: 18px; }
+
+  /* LIVE SEARCH DROPDOWN (Matches Screenshot_4.png) */
+  .gh-live-search-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+    max-height: 390px;
+    overflow-y: auto;
+    z-index: 1001;
+    display: none;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .gh-live-search-dropdown::-webkit-scrollbar {
+    width: 6px;
+  }
+  .gh-live-search-dropdown::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+
+  .gh-live-search-list {
+    list-style: none;
+    margin: 0;
+    padding: 6px 0;
+  }
+
+  .gh-search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    text-decoration: none;
+    border-bottom: 1px solid #f1f3f5;
+    transition: background-color 0.15s ease;
+    cursor: pointer;
+  }
+
+  .gh-search-result-item:last-child {
+    border-bottom: none;
+  }
+
+  .gh-search-result-item:hover,
+  .gh-search-result-item.is-selected {
+    background-color: #f8fafc;
+  }
+
+  .gh-search-item-img {
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    border: 1px solid #edf0f2;
+    border-radius: 6px;
+    padding: 3px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .gh-search-item-img img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .gh-search-item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .gh-search-item-title {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #1e293b;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gh-search-item-price {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--gh-accent, #f37321);
+    line-height: 1.2;
+  }
+
+  .gh-search-item-vendor {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gh-search-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 26px 16px;
+    color: #64748b;
+    font-size: 13px;
+  }
+
+  .gh-search-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid rgba(243, 115, 33, 0.2);
+    border-top-color: var(--gh-accent, #f37321);
+    border-radius: 50%;
+    animation: ghSearchSpin 0.6s linear infinite;
+  }
+
+  @keyframes ghSearchSpin {
+    to { transform: rotate(360deg); }
+  }
+
+  .gh-search-no-results {
+    padding: 26px 18px;
+    text-align: center;
+    color: #64748b;
+    font-size: 13.5px;
+  }
+
+  .gh-search-no-results strong {
+    color: #1e293b;
+  }
+
+
 
   .gh-actions {
     display: flex;
@@ -235,37 +410,184 @@
     line-height: 1;
   }
 
-  /* MORE DROPDOWN */
-  .gh-more-wrap { position: relative; }
+  /* MORE DROPDOWN (Matches Screenshot_4.png & Fixes Hover Bug) */
+  .gh-more-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
   .gh-more-dropdown {
     position: absolute;
     top: 100%;
     right: 0;
-    margin-top: 10px;
-    width: 220px;
+    margin-top: 6px;
+    width: 200px;
     background: #ffffff;
     border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-    border: 1px solid #f0f0f0;
-    padding: 10px 0;
-    display: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid #edf0f3;
+    padding: 0;
     z-index: 1000;
-    animation: ghFadeDown 0.2s ease forwards;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    overflow: visible;
+  }
+
+  /* Invisible hover bridge to eliminate gap between button and dropdown */
+  .gh-more-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -14px;
+    left: -10px;
+    right: -10px;
+    height: 16px;
+    background: transparent;
   }
 
   .gh-more-wrap:hover .gh-more-dropdown,
-  .gh-more-wrap.is-open .gh-more-dropdown { display: block; }
-  .gh-more-dropdown a {
+  .gh-more-wrap:focus-within .gh-more-dropdown,
+  .gh-more-wrap.is-open .gh-more-dropdown {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .gh-more-item-wrap {
+    position: relative;
+  }
+
+  .gh-more-item-link {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 18px;
-    font-size: 13px;
-    color: var(--gh-text-dark);
+    padding: 11px 16px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #334155;
     text-decoration: none;
+    border-bottom: 1px solid #f1f3f5;
+    transition: color 0.15s ease, background-color 0.15s ease;
   }
-  .gh-more-dropdown a:hover { background: #fdf5f0; color: var(--gh-accent); }
-  .gh-more-dropdown a svg { width: 16px; height: 16px; color: #888; }
+
+  .gh-more-item-wrap:first-child > .gh-more-item-link {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+
+  .gh-more-item-wrap:last-child > .gh-more-item-link {
+    border-bottom: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+
+  .gh-more-item-link:hover {
+    background-color: #fffaf5;
+    color: var(--gh-accent, #f37321);
+  }
+
+  .gh-more-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #475569;
+    transition: color 0.15s ease;
+  }
+
+  .gh-more-item-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .gh-more-item-link:hover .gh-more-item-icon svg:not(.gh-whatsapp-icon) {
+    color: var(--gh-accent, #f37321);
+  }
+
+  .gh-more-item-icon .gh-whatsapp-icon {
+    color: #25D366;
+  }
+
+  .gh-more-item-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gh-more-item-arrow {
+    width: 14px;
+    height: 14px;
+    color: #94a3b8;
+    margin-left: auto;
+  }
+
+  /* Nested flyout for More menu items */
+  .gh-more-nested-dropdown {
+    position: absolute;
+    top: 0;
+    right: 100%;
+    margin-right: 4px;
+    width: 190px;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #edf0f3;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    overflow: hidden;
+    z-index: 1002;
+  }
+
+  .gh-more-nested-dropdown::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    bottom: -5px;
+    width: 12px;
+    background: transparent;
+  }
+
+  .gh-more-item-wrap:hover > .gh-more-nested-dropdown {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .gh-more-nested-link {
+    display: block;
+    padding: 9px 16px;
+    font-size: 13px;
+    color: #334155;
+    text-decoration: none;
+    border-bottom: 1px solid #f1f3f5;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .gh-more-nested-link:last-child {
+    border-bottom: none;
+  }
+
+  .gh-more-nested-link:hover {
+    background-color: #fffaf5;
+    color: var(--gh-accent, #f37321);
+  }
+
+  .gh-more-empty-notice {
+    padding: 16px 14px;
+    font-size: 12.5px;
+    color: #64748b;
+    text-align: center;
+  }
 
   /* NAVLINK BAR (Dark Green - STICKY ON DESKTOP > 1000px) */
   .gh-nav-bar-wrapper { width: 100%; position: relative; }
@@ -1056,6 +1378,515 @@
   @keyframes ghMiniSpin {
     to { transform: rotate(360deg); }
   }
+
+  /* ==========================================================================
+     FLOATING CART (Matches Screenshot_3.png)
+     ========================================================================== */
+  .gh-floating-cart {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 996;
+    display: flex;
+    flex-direction: column;
+    width: 76px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .gh-floating-cart:hover {
+    transform: translateY(-50%) translateX(-3px);
+    box-shadow: -4px 8px 24px rgba(0, 0, 0, 0.22);
+  }
+
+  .gh-floating-cart-top {
+    background-color: var(--gh-accent, #f37321);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 6px 9px;
+    border-top-left-radius: 8px;
+    transition: background-color 0.2s ease;
+  }
+
+  .gh-floating-cart:hover .gh-floating-cart-top {
+    background-color: var(--gh-accent-hover, #e06010);
+  }
+
+  .gh-floating-cart-icon {
+    width: 26px;
+    height: 26px;
+    stroke: #ffffff;
+    margin-bottom: 5px;
+    display: block;
+  }
+
+  .gh-floating-cart-count {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-align: center;
+    letter-spacing: -0.1px;
+    font-family: var(--gh-font);
+  }
+
+  .gh-floating-cart-bottom {
+    background-color: #ffffff;
+    padding: 8px 6px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom-left-radius: 8px;
+    border-left: 1px solid #edf0f3;
+    border-bottom: 1px solid #edf0f3;
+  }
+
+  .gh-floating-cart-price {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--gh-accent, #f37321);
+    line-height: 1.2;
+    white-space: nowrap;
+    letter-spacing: -0.2px;
+    font-family: var(--gh-font);
+  }
+
+  @media (max-width: 767px) {
+    .gh-floating-cart {
+      width: 66px;
+    }
+    .gh-floating-cart-top {
+      padding: 10px 4px 7px;
+    }
+    .gh-floating-cart-icon {
+      width: 22px;
+      height: 22px;
+      margin-bottom: 3px;
+    }
+    .gh-floating-cart-count {
+      font-size: 11px;
+    }
+    .gh-floating-cart-bottom {
+      padding: 6px 4px;
+    }
+    .gh-floating-cart-price {
+      font-size: 12px;
+    }
+  }
+
+  /* ==========================================================================
+     CIRCULAR BACK TO TOP (Matches Screenshot_3.png)
+     ========================================================================== */
+  .gh-back-to-top {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 48px;
+    height: 48px;
+    z-index: 995;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(14px) scale(0.88);
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .gh-back-to-top.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+
+  .gh-btt-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .gh-btt-track {
+    stroke: rgba(243, 115, 33, 0.15);
+  }
+
+  .gh-btt-progress {
+    stroke: var(--gh-accent, #f37321);
+    transition: stroke-dashoffset 0.08s linear;
+  }
+
+  .gh-btt-inner {
+    width: 37px;
+    height: 37px;
+    border-radius: 50%;
+    background-color: var(--gh-accent, #f37321);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(243, 115, 33, 0.38);
+    transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .gh-back-to-top:hover .gh-btt-inner {
+    transform: scale(1.06);
+    background-color: var(--gh-accent-hover, #e06010);
+    box-shadow: 0 6px 18px rgba(243, 115, 33, 0.48);
+  }
+
+  .gh-btt-inner svg {
+    display: block;
+    stroke: #ffffff;
+  }
+
+  @media (max-width: 767px) {
+    .gh-back-to-top {
+      bottom: 20px;
+      right: 16px;
+      width: 44px;
+      height: 44px;
+    }
+    .gh-btt-inner {
+      width: 34px;
+      height: 34px;
+    }
+    .gh-btt-inner svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  /* ==========================================================================
+     MOBILE FIXED BOTTOM NAVIGATION (Matches a3df725b-1e70-4947-b956-65371c1c7222.png)
+     ========================================================================== */
+  .gh-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 56px;
+    background-color: var(--gh-accent, #f37321);
+    z-index: 998;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.12);
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 4px;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (max-width: 767px) {
+    .gh-bottom-nav {
+      display: flex !important;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      height: calc(56px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Prevent page content from being obscured behind fixed bottom bar */
+    body {
+      padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* Elevate Back to Top button so it floats cleanly above bottom nav */
+    .gh-back-to-top {
+      bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+  }
+
+  .gh-bnav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: transparent;
+    border: none;
+    padding: 4px 2px 2px;
+    margin: 0;
+    color: #ffffff;
+    text-decoration: none;
+    cursor: pointer;
+    outline: none;
+    font-family: var(--gh-font);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .gh-bnav-item:active {
+    opacity: 0.82;
+    transform: scale(0.96);
+  }
+
+  .gh-bnav-icon-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 24px;
+    margin-bottom: 3px;
+  }
+
+  .gh-bnav-icon-wrap svg {
+    display: block;
+    width: 21px;
+    height: 21px;
+    stroke: #ffffff;
+  }
+
+  .gh-bnav-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .gh-bnav-badge {
+    position: absolute;
+    top: -4px;
+    right: -7px;
+    min-width: 17px;
+    height: 17px;
+    background-color: #202b36;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    line-height: 1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  }
+
+  /* ==========================================================================
+     MOBILE SEARCH MODAL POPUP (Matches Screenshot_6.png)
+     ========================================================================== */
+  .gh-mobile-search-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 10001;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .gh-mobile-search-overlay.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .gh-mobile-search-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: #ffffff;
+    z-index: 10002;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+    transform: translateY(-100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, visibility 0.28s ease;
+  }
+
+  .gh-mobile-search-modal.is-open {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .gh-mobile-search-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    background: #ffffff;
+  }
+
+  .gh-mobile-search-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    font-family: var(--gh-font);
+    letter-spacing: -0.2px;
+  }
+
+  .gh-mobile-search-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .gh-mobile-search-close:hover,
+  .gh-mobile-search-close:active {
+    background: #fecaca;
+    transform: scale(1.06);
+  }
+
+  .gh-mobile-search-close svg {
+    display: block;
+    stroke: #ef4444;
+  }
+
+  .gh-mobile-search-body {
+    padding: 16px;
+    background: #ffffff;
+  }
+
+  .gh-modal-search-form {
+    width: 100%;
+    max-width: 100% !important;
+    margin: 0;
+    position: relative;
+  }
+
+  .gh-modal-search-form .gh-search-input-wrap {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    position: relative;
+  }
+
+  .gh-modal-search-input {
+    flex: 1;
+    height: 44px !important;
+    border: 1px solid #d5d9df !important;
+    border-right: none !important;
+    border-top-left-radius: 6px !important;
+    border-bottom-left-radius: 6px !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    background: #ffffff !important;
+    font-size: 14px !important;
+    padding: 0 14px !important;
+    color: #1f2937 !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .gh-modal-search-input:focus {
+    border-color: #cbd5e1 !important;
+  }
+
+  .gh-modal-search-btn {
+    width: 52px;
+    height: 44px;
+    background-color: var(--gh-accent, #f37321);
+    border: 1px solid var(--gh-accent, #f37321);
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    outline: none;
+    transition: background-color 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .gh-modal-search-btn:hover,
+  .gh-modal-search-btn:active {
+    background-color: var(--gh-accent-hover, #e06010);
+    border-color: var(--gh-accent-hover, #e06010);
+  }
+
+  .gh-modal-search-btn svg {
+    display: block;
+    stroke: #ffffff;
+    width: 20px;
+    height: 20px;
+  }
+
+  .gh-modal-search-form .gh-live-search-dropdown {
+    top: calc(100% + 4px);
+    max-height: 55vh;
+  }
+
+  .gh-mobile-right-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .gh-mobile-action-btn {
+    background: none;
+    border: none;
+    padding: 6px;
+    margin: 0;
+    cursor: pointer;
+    color: var(--gh-text-dark, #222529);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gh-mobile-action-btn svg {
+    width: 22px;
+    height: 22px;
+  }
 </style>
 
 <div class="gh-custom-header" id="ghCustomHeader">
@@ -1097,12 +1928,15 @@
         <form action="{{ routes.search_url }}" method="get" role="search" class="gh-search-form">
           <div class="gh-search-input-wrap">
             <input 
-              type="search" 
+              type="text" 
               name="q" 
               value="{{ search.terms | escape }}" 
               placeholder="{{ section.settings.search_placeholder | default: 'Search in...' }}" 
               class="gh-search-input" 
               autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
               required
             >
             <button type="submit" class="gh-search-btn" aria-label="Search">
@@ -1112,6 +1946,7 @@
               </svg>
             </button>
           </div>
+          <div class="gh-live-search-dropdown" role="region" aria-label="Search results"></div>
         </form>
 
         <div class="gh-actions">
@@ -1160,7 +1995,7 @@
           </a>
 
           <div class="gh-more-wrap">
-            <button type="button" class="gh-action-link gh-more-btn" title="More Menu" aria-haspopup="true">
+            <button type="button" class="gh-action-link gh-more-btn" title="More Menu" aria-haspopup="true" aria-expanded="false">
               <span class="gh-icon-box">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -1170,15 +2005,85 @@
               </span>
               <span class="gh-action-label">More</span>
             </button>
-            <div class="gh-more-dropdown">
-              <a href="/pages/about-us">About Us</a>
-              <a href="{{ section.settings.wishlist_url | default: '/pages/wishlist' }}">Wishlists</a>
-              <a href="/pages/faq">FAQs</a>
-              {% if section.settings.phone_number != blank %}
-                <a href="tel:{{ section.settings.phone_number }}">Call Us</a>
+            <div class="gh-more-dropdown" role="menu">
+              {% if more_call_val contains 'tel:' or more_call_val contains 'http://' or more_call_val contains 'https://' or more_call_val contains '/' %}
+                {% assign more_call_href = more_call_val %}
+              {% else %}
+                {% assign more_call_href = 'tel:' | append: more_call_val %}
               {% endif %}
-              {% if section.settings.whatsapp_number != blank %}
-                <a href="https://wa.me/{{ section.settings.whatsapp_number | replace: '+', '' | replace: ' ', '' }}" target="_blank">WhatsApp</a>
+
+              {% if more_wa_val contains 'wa.me' or more_wa_val contains 'http://' or more_wa_val contains 'https://' %}
+                {% assign more_wa_href = more_wa_val %}
+              {% else %}
+                {% assign more_wa_clean = more_wa_val | replace: '+', '' | replace: ' ', '' | replace: '-', '' | replace: '(', '' | replace: ')', '' %}
+                {% assign more_wa_href = 'https://wa.me/' | append: more_wa_clean %}
+              {% endif %}
+
+              <div class="gh-more-item-wrap">
+                <a href="{{ more_about_url }}" class="gh-more-item-link" role="menuitem">
+                  <span class="gh-more-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="16" rx="3"></rect>
+                      <circle cx="9" cy="10" r="2.5"></circle>
+                      <line x1="15" y1="9" x2="19" y2="9"></line>
+                      <line x1="15" y1="13" x2="19" y2="13"></line>
+                      <line x1="7" y1="16" x2="11" y2="16"></line>
+                    </svg>
+                  </span>
+                  <span class="gh-more-item-text">About Us</span>
+                </a>
+              </div>
+
+              <div class="gh-more-item-wrap">
+                <a href="{{ more_wishlist_url }}" class="gh-more-item-link" role="menuitem">
+                  <span class="gh-more-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                  </span>
+                  <span class="gh-more-item-text">Wishlists</span>
+                </a>
+              </div>
+
+              <div class="gh-more-item-wrap">
+                <a href="{{ more_faq_url }}" class="gh-more-item-link" role="menuitem">
+                  <span class="gh-more-item-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                  </span>
+                  <span class="gh-more-item-text">FAQs</span>
+                </a>
+              </div>
+
+              {% if more_call_val != blank %}
+                <div class="gh-more-item-wrap">
+                  <a href="{{ more_call_href }}" class="gh-more-item-link" role="menuitem">
+                    <span class="gh-more-item-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        <path d="M14.05 2a9 9 0 0 1 7.95 7.95"></path>
+                        <path d="M14.05 6a5 5 0 0 1 3.95 3.95"></path>
+                      </svg>
+                    </span>
+                    <span class="gh-more-item-text">Call Us</span>
+                  </a>
+                </div>
+              {% endif %}
+
+              {% if more_wa_val != blank %}
+                <div class="gh-more-item-wrap">
+                  <a href="{{ more_wa_href }}" target="_blank" rel="noopener noreferrer" class="gh-more-item-link" role="menuitem">
+                    <span class="gh-more-item-icon">
+                      <svg class="gh-whatsapp-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                      </svg>
+                    </span>
+                    <span class="gh-more-item-text">WhatsApp</span>
+                  </a>
+                </div>
               {% endif %}
             </div>
           </div>
@@ -1249,29 +2154,70 @@
         {% endif %}
       </a>
 
-      <!-- Mobile Cart Button (CLICK OPENS CART DRAWER) -->
-      <a href="{{ routes.cart_url }}" class="gh-mobile-cart-btn js-gh-cart-open" aria-label="Cart">
-        <span class="gh-icon-box">
+      <div class="gh-mobile-right-group">
+        <button type="button" class="gh-mobile-action-btn js-gh-search-open" aria-label="Search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="21" r="1"></circle>
-            <circle cx="20" cy="21" r="1"></circle>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            <circle cx="11" cy="11" r="7.5"></circle>
+            <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
           </svg>
-          <span class="gh-badge js-cart-badge-count">{{ cart.item_count }}</span>
-        </span>
-      </a>
+        </button>
+
+        <!-- Mobile Cart Button (CLICK OPENS CART DRAWER) -->
+        <a href="{{ routes.cart_url }}" class="gh-mobile-cart-btn js-gh-cart-open" aria-label="Cart">
+          <span class="gh-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="21" r="1"></circle>
+              <circle cx="20" cy="21" r="1"></circle>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            </svg>
+            <span class="gh-badge js-cart-badge-count">{{ cart.item_count }}</span>
+          </span>
+        </a>
+      </div>
     </div>
   </div>
 
-  <div class="gh-mobile-search-bar">
-    <form action="{{ routes.search_url }}" method="get" role="search" class="gh-search-form">
-      <div class="gh-search-input-wrap">
-        <input type="search" name="q" placeholder="{{ section.settings.search_placeholder | default: 'Search in...' }}" class="gh-search-input" style="height: 40px; font-size: 13px;" autocomplete="off" required>
-        <button type="submit" class="gh-search-btn" aria-label="Search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        </button>
-      </div>
-    </form>
+  <!-- ======================================================================
+       MOBILE SEARCH MODAL POPUP (Matches Screenshot_6.png)
+       ====================================================================== -->
+  <div class="gh-mobile-search-overlay" id="ghMobileSearchOverlay"></div>
+
+  <div class="gh-mobile-search-modal" id="ghMobileSearchModal" role="dialog" aria-modal="true" aria-label="Search Products">
+    <div class="gh-mobile-search-header">
+      <h3 class="gh-mobile-search-title">Search Products</h3>
+      <button type="button" class="gh-mobile-search-close" id="ghMobileSearchClose" aria-label="Close search">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="gh-mobile-search-body">
+      <form action="{{ routes.search_url }}" method="get" role="search" class="gh-search-form gh-modal-search-form">
+        <div class="gh-search-input-wrap">
+          <input 
+            type="text" 
+            name="q" 
+            value="{{ search.terms | escape }}"
+            placeholder="{{ section.settings.search_placeholder | default: 'Search in...' }}" 
+            class="gh-search-input gh-modal-search-input" 
+            autocomplete="off" 
+            autocorrect="off" 
+            autocapitalize="off" 
+            spellcheck="false" 
+            required
+          >
+          <button type="submit" class="gh-modal-search-btn" aria-label="Search">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7.5"></circle>
+              <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="gh-live-search-dropdown" role="region" aria-label="Search results"></div>
+      </form>
+    </div>
   </div>
 
   <!-- OFFCANVAS NAVIGATION DRAWER (LEFT) -->
@@ -1322,9 +2268,9 @@
               <li class="gh-quick-item"><a href="{{ qlink.url }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>{{ qlink.title }}</a></li>
             {% endfor %}
           {% else %}
-            <li class="gh-quick-item"><a href="/pages/about-us">About Us</a></li>
-            <li class="gh-quick-item"><a href="{{ section.settings.wishlist_url | default: '/pages/wishlist' }}">Wishlists</a></li>
-            <li class="gh-quick-item"><a href="/pages/faq">FAQs</a></li>
+            <li class="gh-quick-item"><a href="{{ more_about_url }}">About Us</a></li>
+            <li class="gh-quick-item"><a href="{{ more_wishlist_url }}">Wishlists</a></li>
+            <li class="gh-quick-item"><a href="{{ more_faq_url }}">FAQs</a></li>
           {% endif %}
         </ul>
       </div>
@@ -1468,6 +2414,117 @@
     </div>
   </aside>
 
+  {% if section.settings.enable_floating_cart != false %}
+    <!-- ======================================================================
+         ALWAYS-VISIBLE FLOATING CART (Matches Screenshot_3.png)
+         ====================================================================== -->
+    <button type="button" class="gh-floating-cart js-gh-cart-open" id="ghFloatingCart" aria-label="Open Cart" title="Shopping Cart">
+      <div class="gh-floating-cart-top">
+        <svg class="gh-floating-cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="8" width="18" height="13" rx="2"></rect>
+          <path d="M8 8V6a4 4 0 0 1 8 0v2"></path>
+        </svg>
+        <span class="gh-floating-cart-count js-floating-cart-count">
+          {{ cart.item_count }} {% if cart.item_count == 1 %}Item{% else %}Items{% endif %}
+        </span>
+      </div>
+      <div class="gh-floating-cart-bottom">
+        <span class="gh-floating-cart-price js-floating-cart-total">
+          {% if cart.total_price > 0 %}
+            {% assign f_total = cart.total_price | money %}
+            {% unless f_total contains '৳' or f_total contains 'Tk' %}
+              {% assign f_total = '৳' | append: f_total %}
+            {% endunless %}
+            {{ f_total }}
+          {% else %}
+            ৳0.00
+          {% endif %}
+        </span>
+      </div>
+    </button>
+  {% endif %}
+
+  {% if section.settings.enable_back_to_top != false %}
+    <!-- ======================================================================
+         CIRCULAR BACK TO TOP BUTTON WITH SCROLL PROGRESS (Matches Screenshot_3.png)
+         ====================================================================== -->
+    <button type="button" class="gh-back-to-top" id="ghBackToTop" aria-label="Back to top" title="Back to top">
+      <svg class="gh-btt-svg" viewBox="0 0 48 48" width="48" height="48">
+        <circle class="gh-btt-track" cx="24" cy="24" r="21.5" fill="none" stroke-width="2.5" />
+        <circle class="gh-btt-progress" id="ghBttProgress" cx="24" cy="24" r="21.5" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="135.08" stroke-dashoffset="135.08" transform="rotate(-90 24 24)" />
+      </svg>
+      <div class="gh-btt-inner">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 15 12 9 18 15"></polyline>
+        </svg>
+      </div>
+    </button>
+  {% endif %}
+
+  {% if section.settings.enable_mobile_bottom_nav != false %}
+    <!-- ======================================================================
+         MOBILE FIXED BOTTOM NAVIGATION (Matches a3df725b-1e70-4947-b956-65371c1c7222.png)
+         ====================================================================== -->
+    <nav class="gh-bottom-nav" id="ghBottomNav" aria-label="Mobile Navigation">
+      <!-- HOME -->
+      <a href="{{ routes.root_url }}" class="gh-bnav-item" aria-label="Home">
+        <span class="gh-bnav-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9.5L12 3l9 6.5V20a1.5 1.5 0 0 1-1.5 1.5H15v-6a3 3 0 0 0-6 0v6H4.5A1.5 1.5 0 0 1 3 20V9.5z"></path>
+          </svg>
+        </span>
+        <span class="gh-bnav-label">HOME</span>
+      </a>
+
+      <!-- MENU -->
+      <button type="button" class="gh-bnav-item js-gh-drawer-open" id="ghBnavMenu" aria-label="Menu">
+        <span class="gh-bnav-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="2"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="2"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="2"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="2"></rect>
+          </svg>
+        </span>
+        <span class="gh-bnav-label">MENU</span>
+      </button>
+
+      <!-- CART -->
+      <button type="button" class="gh-bnav-item js-gh-cart-open" id="ghBnavCart" aria-label="Cart">
+        <span class="gh-bnav-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="8" width="18" height="13" rx="2"></rect>
+            <path d="M8 8V6a4 4 0 0 1 8 0v2"></path>
+          </svg>
+          <span class="gh-bnav-badge js-cart-badge-count">{{ cart.item_count }}</span>
+        </span>
+        <span class="gh-bnav-label">CART</span>
+      </button>
+
+      <!-- SEARCH -->
+      <button type="button" class="gh-bnav-item" id="ghBnavSearch" aria-label="Search">
+        <span class="gh-bnav-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7.5"></circle>
+            <line x1="21" y1="21" x2="16.5" y2="16.5"></line>
+          </svg>
+        </span>
+        <span class="gh-bnav-label">SEARCH</span>
+      </button>
+
+      <!-- ACCOUNT -->
+      <a href="{% if customer %}{{ routes.account_url }}{% else %}{{ routes.account_login_url }}{% endif %}" class="gh-bnav-item" aria-label="Account">
+        <span class="gh-bnav-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </span>
+        <span class="gh-bnav-label">ACCOUNT</span>
+      </a>
+    </nav>
+  {% endif %}
+
 </div>
 
 <script>
@@ -1555,14 +2612,234 @@
         moreBtn.addEventListener('click', function(e) {
           e.preventDefault();
           e.stopPropagation();
-          moreWrap.classList.toggle('is-open');
+          const isOpen = moreWrap.classList.toggle('is-open');
+          moreBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });
         document.addEventListener('click', function(e) {
           if (!e.target.closest('.gh-more-wrap')) {
             moreWrap.classList.remove('is-open');
+            moreBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && moreWrap.classList.contains('is-open')) {
+            moreWrap.classList.remove('is-open');
+            moreBtn.setAttribute('aria-expanded', 'false');
           }
         });
       }
+
+      /* Live / Predictive Search (>= 2 chars, debounced, cancel stale, loading, no-results) */
+      function initLiveSearch() {
+        const searchForms = document.querySelectorAll('.gh-search-form');
+        if (!searchForms.length) return;
+
+        searchForms.forEach(form => {
+          const input = form.querySelector('.gh-search-input');
+          const dropdown = form.querySelector('.gh-live-search-dropdown');
+          if (!input || !dropdown) return;
+
+          let debounceTimer = null;
+          let activeAbortController = null;
+          let selectedIndex = -1;
+          const searchCache = {};
+
+          function formatPrice(val) {
+            if (val === undefined || val === null || val === '') return '';
+            let num = Number(val);
+            if (isNaN(num)) return String(val);
+            if (typeof val === 'string' && val.includes('.')) {
+              num = parseFloat(val);
+            } else if (num > 10000 && !String(val).includes('.')) {
+              num = num / 100;
+            }
+            const rounded = Math.round(num).toLocaleString('en-US');
+            return '৳' + rounded;
+          }
+
+          function getThumbUrl(url) {
+            if (!url) return 'https://backoffice.ghorerbazar.com/company_logo/qJaKf1768887846.png';
+            if (url.startsWith('//')) url = 'https:' + url;
+            if (url.includes('{width}')) return url.replace('{width}', '100');
+            if (url.includes('?')) return url + '&width=100';
+            return url + '?width=100';
+          }
+
+          function openDropdown() {
+            dropdown.style.display = 'block';
+            dropdown.setAttribute('aria-expanded', 'true');
+          }
+
+          function closeDropdown() {
+            dropdown.style.display = 'none';
+            dropdown.setAttribute('aria-expanded', 'false');
+            selectedIndex = -1;
+          }
+
+          function renderLoading() {
+            dropdown.innerHTML = `
+              <div class="gh-search-loading">
+                <div class="gh-search-spinner"></div>
+                <span>Searching products...</span>
+              </div>
+            `;
+            openDropdown();
+          }
+
+          function renderNoResults(term) {
+            dropdown.innerHTML = `
+              <div class="gh-search-no-results">
+                No products found for "<strong>${escapeHtml(term)}</strong>"
+              </div>
+            `;
+            openDropdown();
+          }
+
+          function renderResults(products, term) {
+            if (!products || products.length === 0) {
+              renderNoResults(term);
+              return;
+            }
+
+            let html = '<div class="gh-live-search-list" role="listbox">';
+            products.forEach((prod, idx) => {
+              const pTitle = prod.title || '';
+              const pUrl = prod.url || '#';
+              const pPrice = prod.price !== undefined ? formatPrice(prod.price) : (prod.price_min !== undefined ? formatPrice(prod.price_min) : '');
+              const pVendor = prod.vendor || '';
+              const pImg = getThumbUrl((prod.featured_image && prod.featured_image.url) ? prod.featured_image.url : (prod.image || ''));
+
+              html += `
+                <a href="${pUrl}" class="gh-search-result-item" role="option" data-index="${idx}">
+                  <div class="gh-search-item-img">
+                    <img src="${pImg}" alt="${escapeHtml(pTitle)}" loading="lazy">
+                  </div>
+                  <div class="gh-search-item-info">
+                    <span class="gh-search-item-title">${escapeHtml(pTitle)}</span>
+                    ${pPrice ? `<span class="gh-search-item-price">${pPrice}</span>` : ''}
+                    ${pVendor ? `<span class="gh-search-item-vendor">${escapeHtml(pVendor)}</span>` : ''}
+                  </div>
+                </a>
+              `;
+            });
+            html += '</div>';
+
+            dropdown.innerHTML = html;
+            openDropdown();
+            selectedIndex = -1;
+          }
+
+          function fetchResults(term) {
+            const cacheKey = term.toLowerCase().trim();
+            if (searchCache[cacheKey]) {
+              renderResults(searchCache[cacheKey], term);
+              return;
+            }
+
+            renderLoading();
+
+            if (activeAbortController) {
+              activeAbortController.abort();
+            }
+            activeAbortController = new AbortController();
+
+            const suggestUrl = `/search/suggest.json?q=${encodeURIComponent(term)}&resources[type]=product&resources[limit]=8&resources[options][unavailable_products]=last`;
+
+            fetch(suggestUrl, { signal: activeAbortController.signal })
+              .then(res => {
+                if (!res.ok) throw new Error('Search request failed');
+                return res.json();
+              })
+              .then(data => {
+                const products = (data && data.resources && data.resources.results && data.resources.results.products) ? data.resources.results.products : [];
+                searchCache[cacheKey] = products;
+                renderResults(products, term);
+              })
+              .catch(err => {
+                if (err.name === 'AbortError') return;
+                // Fallback to /search.js?q=...&type=product
+                fetch(`/search.js?q=${encodeURIComponent(term)}&type=product`, { signal: activeAbortController?.signal })
+                  .then(r => r.json())
+                  .then(data => {
+                    const fallbackProducts = (data && data.results) ? data.results : [];
+                    searchCache[cacheKey] = fallbackProducts;
+                    renderResults(fallbackProducts, term);
+                  })
+                  .catch(fallbackErr => {
+                    if (fallbackErr.name === 'AbortError') return;
+                    renderNoResults(term);
+                  });
+              });
+          }
+
+          input.addEventListener('input', function() {
+            const val = input.value.trim();
+            if (debounceTimer) clearTimeout(debounceTimer);
+
+            if (val.length < 2) {
+              if (activeAbortController) activeAbortController.abort();
+              closeDropdown();
+              return;
+            }
+
+            debounceTimer = setTimeout(() => {
+              fetchResults(val);
+            }, 220);
+          });
+
+          input.addEventListener('focus', function() {
+            const val = input.value.trim();
+            if (val.length >= 2) {
+              if (searchCache[val.toLowerCase()]) {
+                renderResults(searchCache[val.toLowerCase()], val);
+              } else {
+                fetchResults(val);
+              }
+            }
+          });
+
+          input.addEventListener('keydown', function(e) {
+            const items = dropdown.querySelectorAll('.gh-search-result-item');
+            if (!items.length || dropdown.style.display === 'none') return;
+
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              selectedIndex = (selectedIndex + 1) % items.length;
+              updateSelectedItem(items);
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+              updateSelectedItem(items);
+            } else if (e.key === 'Enter') {
+              if (selectedIndex >= 0 && items[selectedIndex]) {
+                e.preventDefault();
+                items[selectedIndex].click();
+              }
+            } else if (e.key === 'Escape') {
+              closeDropdown();
+            }
+          });
+
+          function updateSelectedItem(items) {
+            items.forEach((item, idx) => {
+              if (idx === selectedIndex) {
+                item.classList.add('is-selected');
+                item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+              } else {
+                item.classList.remove('is-selected');
+              }
+            });
+          }
+
+          document.addEventListener('click', function(e) {
+            if (!form.contains(e.target)) {
+              closeDropdown();
+            }
+          });
+        });
+      }
+
+      initLiveSearch();
 
       /* Left Nav Drawer */
       function openNavDrawer() {
@@ -1683,10 +2960,19 @@
       function updateCartUI(cart) {
         if (!cart) return;
 
-        // 1. Update badges
+        // 1. Update badges & floating cart
         const count = cart.item_count !== undefined ? cart.item_count : 0;
         document.querySelectorAll('.js-cart-badge-count').forEach(badge => {
           badge.textContent = count;
+        });
+
+        const countText = `${count} ${count === 1 ? 'Item' : 'Items'}`;
+        const priceText = count > 0 ? formatMoney(cart.total_price) : '৳0.00';
+        document.querySelectorAll('.js-floating-cart-count').forEach(el => {
+          el.textContent = countText;
+        });
+        document.querySelectorAll('.js-floating-cart-total').forEach(el => {
+          el.textContent = priceText;
         });
 
         // 2. Empty vs Filled view
@@ -2210,6 +3496,170 @@
         };
       }
 
+      /* Floating Cart Open Handler */
+      const floatingCart = document.getElementById('ghFloatingCart');
+      if (floatingCart) {
+        floatingCart.addEventListener('click', function(e) {
+          e.preventDefault();
+          openCartDrawer();
+        });
+      }
+
+      /* ======================================================================
+         Back to Top with Circular Scroll Progress & Featured Categories Visibility
+         ====================================================================== */
+      function initBackToTop() {
+        const bttBtn = document.getElementById('ghBackToTop');
+        const bttProgress = document.getElementById('ghBttProgress');
+        if (!bttBtn || !bttProgress) return;
+
+        const circumference = 135.08; // 2 * Math.PI * 21.5
+        bttProgress.style.strokeDasharray = `${circumference} ${circumference}`;
+        bttProgress.style.strokeDashoffset = `${circumference}`;
+
+        function getTriggerThreshold() {
+          const catSection = document.querySelector('.gh-cat-section') ||
+                             document.querySelector('[id*="custom-categories"]') ||
+                             document.querySelector('[id*="custom_categories"]');
+          if (catSection) {
+            const rect = catSection.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
+            // Become visible after Featured Categories section has scrolled past
+            return rect.top + scrollTop + catSection.offsetHeight;
+          }
+          // Fallback threshold for other pages
+          return 450;
+        }
+
+        let ticking = false;
+
+        function handleScrollProgress() {
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
+          const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+          const threshold = getTriggerThreshold();
+
+          // 1. Visibility toggle: become visible after Featured Categories section
+          if (scrollTop >= threshold) {
+            bttBtn.classList.add('is-visible');
+          } else {
+            bttBtn.classList.remove('is-visible');
+          }
+
+          // 2. Circular progress fill
+          const progress = docHeight > 0 ? Math.min(Math.max(scrollTop / docHeight, 0), 1) : 0;
+          const offset = circumference - (progress * circumference);
+          bttProgress.style.strokeDashoffset = offset;
+
+          ticking = false;
+        }
+
+        window.addEventListener('scroll', function() {
+          if (!ticking) {
+            window.requestAnimationFrame(handleScrollProgress);
+            ticking = true;
+          }
+        }, { passive: true });
+
+        window.addEventListener('resize', function() {
+          if (!ticking) {
+            window.requestAnimationFrame(handleScrollProgress);
+            ticking = true;
+          }
+        });
+
+        // Click to smoothly scroll completely to top
+        bttBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        });
+
+        handleScrollProgress();
+      }
+
+      initBackToTop();
+
+      /* Mobile Bottom Navigation Bar Handlers */
+      const bnavMenu = document.getElementById('ghBnavMenu');
+      if (bnavMenu) {
+        bnavMenu.addEventListener('click', function(e) {
+          e.preventDefault();
+          openNavDrawer();
+        });
+      }
+
+      const bnavCart = document.getElementById('ghBnavCart');
+      if (bnavCart) {
+        bnavCart.addEventListener('click', function(e) {
+          e.preventDefault();
+          openCartDrawer();
+        });
+      }
+
+      /* Mobile Search Modal Handlers (Matches Screenshot_6.png) */
+      const searchModal = document.getElementById('ghMobileSearchModal');
+      const searchOverlay = document.getElementById('ghMobileSearchOverlay');
+      const searchCloseBtn = document.getElementById('ghMobileSearchClose');
+      const searchInputModal = searchModal ? searchModal.querySelector('.gh-modal-search-input') : null;
+
+      function openMobileSearch() {
+        if (!searchModal) return;
+        searchModal.classList.add('is-open');
+        if (searchOverlay) searchOverlay.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => {
+          if (searchInputModal) {
+            searchInputModal.focus();
+          }
+        }, 120);
+      }
+
+      function closeMobileSearch() {
+        if (!searchModal) return;
+        searchModal.classList.remove('is-open');
+        if (searchOverlay) searchOverlay.classList.remove('is-open');
+        if ((!cartDrawer || !cartDrawer.classList.contains('is-active')) && (!drawer || !drawer.classList.contains('is-active'))) {
+          document.body.style.overflow = '';
+        }
+      }
+
+      if (searchCloseBtn) {
+        searchCloseBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          closeMobileSearch();
+        });
+      }
+
+      if (searchOverlay) {
+        searchOverlay.addEventListener('click', function(e) {
+          e.preventDefault();
+          closeMobileSearch();
+        });
+      }
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && searchModal && searchModal.classList.contains('is-open')) {
+          closeMobileSearch();
+        }
+      });
+
+      document.querySelectorAll('.js-gh-search-open').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          openMobileSearch();
+        });
+      });
+
+      const bnavSearch = document.getElementById('ghBnavSearch');
+      if (bnavSearch) {
+        bnavSearch.addEventListener('click', function(e) {
+          e.preventDefault();
+          openMobileSearch();
+        });
+      }
+
       /* Initial cart & cards load */
       window.refreshGhorerCart(false);
 
@@ -2309,7 +3759,38 @@
     },
     {
       "type": "header",
-      "content": "Contact & Links"
+      "content": "More Menu Links"
+    },
+    {
+      "type": "url",
+      "id": "more_about_us_url",
+      "label": "About Us Link"
+    },
+    {
+      "type": "url",
+      "id": "more_wishlist_url",
+      "label": "Wishlists Link"
+    },
+    {
+      "type": "url",
+      "id": "more_faq_url",
+      "label": "FAQs Link"
+    },
+    {
+      "type": "text",
+      "id": "more_phone_number",
+      "label": "Call Us (Phone Number or URL)",
+      "default": "+8809642922922"
+    },
+    {
+      "type": "text",
+      "id": "more_whatsapp_number",
+      "label": "WhatsApp (Phone Number or URL)",
+      "default": "+8801321208940"
+    },
+    {
+      "type": "header",
+      "content": "Header Action Links"
     },
     {
       "type": "url",
@@ -2324,13 +3805,13 @@
     {
       "type": "text",
       "id": "phone_number",
-      "label": "Phone Number",
+      "label": "Fallback Phone Number",
       "default": "+8809642922922"
     },
     {
       "type": "text",
       "id": "whatsapp_number",
-      "label": "WhatsApp Number",
+      "label": "Fallback WhatsApp Number",
       "default": "+8801321208940"
     },
     {
@@ -2354,6 +3835,28 @@
       "id": "accent_color",
       "label": "Accent Color",
       "default": "#f37321"
+    },
+    {
+      "type": "header",
+      "content": "Floating Widgets"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_floating_cart",
+      "label": "Enable Floating Cart (Middle-Right)",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_back_to_top",
+      "label": "Enable Back to Top Button (Bottom-Right)",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_mobile_bottom_nav",
+      "label": "Enable Mobile Bottom Navigation Bar",
+      "default": true
     }
   ],
   "presets": [

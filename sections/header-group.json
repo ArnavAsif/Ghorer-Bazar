@@ -61,6 +61,11 @@
       "settings": {
         "logo_width": 160,
         "menu": "main-menu",
+        "more_about_us_url": "/pages/about-us",
+        "more_wishlist_url": "/pages/wishlist",
+        "more_faq_url": "/pages/faq",
+        "more_phone_number": "+8809642922922",
+        "more_whatsapp_number": "+8801321208940",
         "quick_links_menu": "",
         "enable_sticky_desktop": true,
         "search_placeholder": "Search in...",
@@ -75,7 +80,10 @@
         "nav_text_color": "#ffffff",
         "accent_color": "#f37321",
         "cart_rec_collection": "",
-        "cart_rec_title": "You May Also Like"
+        "cart_rec_title": "You May Also Like",
+        "enable_floating_cart": true,
+        "enable_back_to_top": true,
+        "enable_mobile_bottom_nav": true
       }
     }
   },
