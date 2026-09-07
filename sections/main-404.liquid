@@ -1,23 +1,54 @@
-<style type="text/css">
-  .template-404 .title + * {
-    margin-top: 1rem;
-  }
+{% comment %}
+  =============================================================================
+  MAIN 404 SECTION (WITH SMART WISHLIST AUTO-FALLBACK)
+  - Automatically renders Wishlist page interface if /pages/wishlist is visited
+    before the merchant manually creates the page in Shopify Admin.
+  - Keeps standard 404 page for all other non-existent URLs.
+  =============================================================================
+{% endcomment %}
 
-  @media screen and (min-width: 750px) {
+{% if request.path contains 'wishlist' %}
+  {% render 'custom-wishlist-content' %}
+{% else %}
+  <style type="text/css">
     .template-404 .title + * {
-      margin-top: 2rem;
+      margin-top: 1rem;
     }
-  }
-</style>
 
-<div class="template-404 page-width page-margin center">
-  <p>
-    {{ 'templates.404.subtext' | t }}
-  </p>
-  <h1 class="title">
-    {{ 'templates.404.title' | t }}
-  </h1>
-  <a href="{{ routes.all_products_collection_url }}" class="button">
-    {{ 'general.continue_shopping' | t }}
-  </a>
-</div>
+    @media screen and (min-width: 750px) {
+      .template-404 .title + * {
+        margin-top: 2rem;
+      }
+    }
+  </style>
+
+  <div class="template-404 page-width page-margin center js-404-default">
+    <p>
+      {{ 'templates.404.subtext' | t }}
+    </p>
+    <h1 class="title">
+      {{ 'templates.404.title' | t }}
+    </h1>
+    <a href="{{ routes.all_products_collection_url }}" class="button">
+      {{ 'general.continue_shopping' | t }}
+    </a>
+  </div>
+
+  <div class="js-404-wishlist-fallback" style="display: none;">
+    {% render 'custom-wishlist-content' %}
+  </div>
+
+  <script>
+    (function() {
+      try {
+        if (window.location.pathname.indexOf('wishlist') !== -1) {
+          document.title = "My Wishlist \u2013 {{ shop.name }}";
+          var def404 = document.querySelector('.js-404-default');
+          var wishFallback = document.querySelector('.js-404-wishlist-fallback');
+          if (def404) def404.style.display = 'none';
+          if (wishFallback) wishFallback.style.display = 'block';
+        }
+      } catch (e) {}
+    })();
+  </script>
+{% endif %}

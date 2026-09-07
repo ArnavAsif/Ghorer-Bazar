@@ -1,0 +1,4 @@
+{% layout none %}
+<div class="gh-wishlist-item js-wishlist-item" data-product-id="{{ product.id }}" data-variant-id="{{ product.selected_or_first_available_variant.id }}" data-product-handle="{{ product.handle }}">
+  {% render 'product-card', product: product %}
+</div>
